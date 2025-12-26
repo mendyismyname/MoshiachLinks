@@ -42,7 +42,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId
   const [content, setContent] = useState('');
   const [translatedContent, setTranslatedContent] = useState(''); 
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(initialFolderId);
-  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(() => new Set()); // Initialize with useState
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(() => new Set()); 
   const [draggedNode, setDraggedNode] = useState<Node | null>(null);
   const [dragOverFolder, setDragOverFolder] = useState<string | null>(null);
   const [isProcessingFile, setIsProcessingFile] = useState(false); 
@@ -50,23 +50,28 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId
   const editorRef = useRef<HTMLDivElement>(null);
   const translatedEditorRef = useRef<HTMLDivElement>(null); 
 
+  // Effect to load nodes and initialize expanded folders
   useEffect(() => {
     const fetchNodes = async () => {
       const fetchedNodes = await storageService.getNodes();
       setNodes(fetchedNodes);
-      // Initialize expanded folders to include the initialFolderId and its ancestors
-      const initialExpanded = new Set<string>();
-      let current = initialFolderId;
-      while (current) {
-        initialExpanded.add(current);
-        const parent = fetchedNodes.find(n => n.id === current)?.parentId;
-        current = parent;
-      }
-      setExpandedFolders(initialExpanded);
+
+      // Initialize expanded folders based on the initialFolderId and its ancestors
+      setExpandedFolders(prev => {
+        const newSet = new Set(prev); // Keep existing expanded state
+        let current = initialFolderId;
+        while (current) {
+          newSet.add(current);
+          const parent = fetchedNodes.find(n => n.id === current)?.parentId;
+          current = parent;
+        }
+        return newSet;
+      });
     };
     fetchNodes();
-  }, [initialFolderId, onRefresh]); // Depend on initialFolderId and onRefresh to re-fetch and re-evaluate expanded folders if data changes
+  }, [initialFolderId, onRefresh]); 
 
+  // Effect to handle propEditingNode changes
   useEffect(() => {
     if (propEditingNode) {
       setEditingNode(propEditingNode);
@@ -332,7 +337,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId
               <Folder className="w-5 h-5 text-blue-500 mr-2" />
               <span className="flex-1 truncate">{folder.name.split('|')[0].trim()}</span>
               
-              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="flex gap-1"> {/* Removed opacity-0 group-hover:opacity-100 */}
                 <button 
                   onClick={(e) => { e.stopPropagation(); handleEdit(folder); }}
                   className="p-1 text-gray-500 hover:text-blue-600"
@@ -374,7 +379,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId
             }
             <span className="flex-1 truncate">{file.name.split('|')[0].trim()}</span>
             
-            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="flex gap-1"> {/* Removed opacity-0 group-hover:opacity-100 */}
               <button 
                 onClick={(e) => { e.stopPropagation(); handleEdit(file); }}
                 className="p-1 text-gray-500 hover:text-blue-600"
@@ -542,7 +547,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId
                             </div>
                           </div>
                           
-                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="flex gap-1"> {/* Removed opacity-0 group-hover:opacity-100 */}
                             <button 
                               onClick={(e) => { e.stopPropagation(); handleEdit(node); }}
                               className="p-1 text-gray-500 hover:text-blue-600"

@@ -89,7 +89,7 @@ const ContentCard: React.FC<{ node: FileNode; onClick: () => void }> = ({ node, 
           <DualLabel 
             name={node.name} 
             className="text-xl font-serif text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-1" 
-            subClassName="text-[10px] opacity-60" 
+            subClassName="text-[10px] opacity-80" // Increased opacity for better readability
           />
         </div>
         <p className="text-sm text-gray-400 font-light line-clamp-2 leading-relaxed">
@@ -118,7 +118,7 @@ const NavDropdown: React.FC<{ nodes: Node[]; parent: FolderNode; onSelect: (n: N
         <DualLabel 
           name={parent.name} 
           className="text-sm font-bold text-gray-700 group-hover:text-blue-600 truncate max-w-[140px] 2xl:max-w-[180px]" 
-          subClassName="text-[10px] opacity-60" 
+          subClassName="text-[10px] opacity-80" // Increased opacity
         />
         {children.length > 0 && <ChevronDown className={`w-4 h-4 opacity-40 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />}
       </button>
@@ -140,25 +140,23 @@ const NavDropdown: React.FC<{ nodes: Node[]; parent: FolderNode; onSelect: (n: N
                     onSelect(node);
                     setIsOpen(false);
                   }}
-                  className="w-full text-left p-3 rounded-xl nav-dropdown-item flex items-center justify-between group"
+                  className="w-full text-left p-3 rounded-xl nav-dropdown-item flex items-center gap-3 group"
                 >
-                  <div className="flex items-center gap-3 truncate">
-                    <div className={`shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${
-                      node.type === 'folder' ? 'bg-blue-50 text-blue-500' : 'bg-emerald-50 text-emerald-500'
-                    }`}>
-                      {node.type === 'folder' ? 
-                        <Folder className="w-4 h-4" /> : 
-                        (node as FileNode).contentType === 'video' ? 
-                          <Video className="w-4 h-4" /> : 
-                          <FileText className="w-4 h-4" />
-                      }
-                    </div>
-                    <DualLabel 
-                      name={node.name} 
-                      className="text-sm font-semibold text-gray-700 group-hover:text-blue-600 truncate" 
-                      subClassName="text-[10px] opacity-60" 
-                    />
+                  <div className={`shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${
+                    node.type === 'folder' ? 'bg-blue-50 text-blue-500' : 'bg-emerald-50 text-emerald-500'
+                  }`}>
+                    {node.type === 'folder' ? 
+                      <Folder className="w-4 h-4" /> : 
+                      (node as FileNode).contentType === 'video' ? 
+                        <Video className="w-4 h-4" /> : 
+                        <FileText className="w-4 h-4" />
+                    }
                   </div>
+                  <DualLabel 
+                    name={node.name} 
+                    className="text-sm font-semibold text-gray-700 group-hover:text-blue-600 truncate" 
+                    subClassName="text-[10px] opacity-80" // Increased opacity
+                  />
                   {node.type === 'folder' && <ChevronRight className="w-3.5 h-3.5 opacity-20" />}
                 </button>
               ))}
@@ -186,7 +184,7 @@ const MobileNavAccordion: React.FC<{ nodes: Node[]; parent: FolderNode; onSelect
         <DualLabel 
           name={parent.name} 
           className="text-lg font-serif font-bold text-gray-900 group-hover:text-blue-600" 
-          subClassName="text-xs opacity-60" 
+          subClassName="text-xs opacity-80" // Increased opacity
         />
         {children.length > 0 && <ChevronDown className={`w-5 h-5 opacity-30 transition-transform ${isOpen ? 'rotate-180' : ''}`} />}
       </button>
@@ -224,7 +222,7 @@ const MobileNavAccordion: React.FC<{ nodes: Node[]; parent: FolderNode; onSelect
                   <DualLabel 
                     name={node.name} 
                     className="text-sm font-medium text-gray-600" 
-                    subClassName="text-[10px] opacity-60" 
+                    subClassName="text-[10px] opacity-80" // Increased opacity
                   />
                 </button>
               ))}
@@ -433,7 +431,7 @@ const App: React.FC = () => {
                         <DualLabel 
                           name={n.name} 
                           className="text-sm font-bold truncate" 
-                          subClassName="text-[10px] opacity-60" 
+                          subClassName="text-[10px] opacity-80" // Increased opacity
                         />
                       </button>
                     )) : (
@@ -620,7 +618,7 @@ const App: React.FC = () => {
                   <DualLabel 
                     name={nodes.find(n => n.id === currentFolderId)?.name || ''} 
                     className="text-6xl md:text-9xl" 
-                    subClassName="text-2xl md:text-4xl" 
+                    subClassName="text-2xl md:text-4xl opacity-80" // Increased opacity
                   />
                 </h1>
                 
@@ -639,7 +637,7 @@ const App: React.FC = () => {
                           <DualLabel 
                             name={node.name} 
                             className="text-xl md:text-2xl font-serif truncate" 
-                            subClassName="text-xs md:text-sm opacity-60" 
+                            subClassName="text-xs md:text-sm opacity-80" // Increased opacity
                           />
                         </div>
                         <ChevronRight className="w-7 h-7 opacity-0 -translate-x-6 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-blue-500" />
@@ -786,7 +784,7 @@ const App: React.FC = () => {
                           <DualLabel 
                             name={folder.name} 
                             className="text-3xl font-serif text-gray-900 group-hover:text-blue-600 transition-colors leading-tight" 
-                            subClassName="text-sm font-bold opacity-60" 
+                            subClassName="text-sm font-bold opacity-80" // Increased opacity
                           />
                         </div>
                       </div>
@@ -925,6 +923,15 @@ const App: React.FC = () => {
                   <li><a href="https://chabad.org" target="_blank" className="hover:text-blue-400 transition-colors">Chabad: Moshiach 101</a></li>
                   <li><a href="https://learnmoshiach.com" target="_blank" className="hover:text-blue-400 transition-colors">LearnMoshiach.com</a></li>
                   <li><a href="#" className="hover:text-blue-400 transition-colors italic">Living with Moshiach</a></li>
+                  <li className="pt-8"> {/* Added Admin Portal button to footer */}
+                    <button 
+                      onClick={() => setIsAdminOpen(true)}
+                      className="flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors font-medium"
+                    >
+                      <Settings className="w-4 h-4" />
+                      Admin Portal
+                    </button>
+                  </li>
                 </ul>
               </div>
             </div>
