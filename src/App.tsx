@@ -235,6 +235,9 @@ const MobileNavAccordion: React.FC<{ nodes: Node[]; parent: FolderNode; onSelect
   );
 };
 
+const PLACEHOLDER_CONTENT_HEBREW = '<div dir="rtl" class="text-right"><p>תוכן קובץ DOCX זה יוצג כאן לאחר המרה ל-HTML.</p><p>This DOCX file content would appear here after conversion to HTML.</p></div>';
+const PLACEHOLDER_CONTENT_ENGLISH = '<div dir="ltr"><p>The content of this DOCX file will be displayed here after conversion to HTML and translation.</p></div>';
+
 const App: React.FC = () => {
   const [nodes, setNodes] = useState<Node[]>([]);
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
@@ -339,6 +342,10 @@ const App: React.FC = () => {
     } else {
       setIsUploadingFile(false);
     }
+  };
+
+  const isPlaceholderContent = (file: FileNode) => {
+    return file.content === PLACEHOLDER_CONTENT_HEBREW || file.translatedContent === PLACEHOLDER_CONTENT_ENGLISH;
   };
   
   if (isLoading) {
@@ -540,25 +547,42 @@ const App: React.FC = () => {
                   </div>
                 )}
 
-                {selectedFile.contentType === 'text' && selectedFile.translatedContent && (
-                  <div className="flex justify-end mb-8">
-                    <button
-                      onClick={() => setShowTranslatedContent(!showTranslatedContent)}
-                      className="px-4 py-2 bg-gray-100 text-gray-700 rounded-full text-sm font-medium hover:bg-gray-200 transition-colors flex items-center gap-2"
+                {isPlaceholderContent(selectedFile) ? (
+                  <div className="text-center py-12">
+                    <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-700 mb-2">Content Not Yet Uploaded</h3>
+                    <p className="text-gray-500 mb-4">This entry is a placeholder. Upload a DOCX file to add its content.</p>
+                    <button 
+                      onClick={() => setIsAdminOpen(true)}
+                      className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 mx-auto"
                     >
-                      {showTranslatedContent ? 'Show Original' : 'Show Translation'}
-                      <MessageSquare className="w-4 h-4" />
+                      <Upload className="w-4 h-4" />
+                      Upload DOCX for this Entry
                     </button>
                   </div>
+                ) : (
+                  <>
+                    {selectedFile.contentType === 'text' && selectedFile.translatedContent && (
+                      <div className="flex justify-end mb-8">
+                        <button
+                          onClick={() => setShowTranslatedContent(!showTranslatedContent)}
+                          className="px-4 py-2 bg-gray-100 text-gray-700 rounded-full text-sm font-medium hover:bg-gray-200 transition-colors flex items-center gap-2"
+                        >
+                          {showTranslatedContent ? 'Show Original' : 'Show Translation'}
+                          <MessageSquare className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
+                    
+                    <article 
+                      className={`rich-text-content text-xl md:text-3xl font-light opacity-95 leading-relaxed max-w-none prose prose-2xl prose-blue ${
+                        (showTranslatedContent ? selectedFile.translatedContent : selectedFile.content)?.match(/[א-ת]/) ? 'font-serif text-right' : 'font-sans'
+                      }`}
+                      dir={(showTranslatedContent ? selectedFile.translatedContent : selectedFile.content)?.match(/[א-ת]/) ? "rtl" : "ltr"}
+                      dangerouslySetInnerHTML={{ __html: linkifyContent(showTranslatedContent ? selectedFile.translatedContent || '' : selectedFile.content) }}
+                    />
+                  </>
                 )}
-                
-                <article 
-                  className={`rich-text-content text-xl md:text-3xl font-light opacity-95 leading-relaxed max-w-none prose prose-2xl prose-blue ${
-                    (showTranslatedContent ? selectedFile.translatedContent : selectedFile.content)?.match(/[א-ת]/) ? 'font-serif text-right' : 'font-sans'
-                  }`}
-                  dir={(showTranslatedContent ? selectedFile.translatedContent : selectedFile.content)?.match(/[א-ת]/) ? "rtl" : "ltr"}
-                  dangerouslySetInnerHTML={{ __html: linkifyContent(showTranslatedContent ? selectedFile.translatedContent || '' : selectedFile.content) }}
-                />
               </div>
             </TransitionWrapper>
           ) : currentFolderId ? (
@@ -893,15 +917,7 @@ const App: React.FC = () => {
                   <li><a href="https://chabad.org" target="_blank" className="hover:text-blue-400 transition-colors">Chabad: Moshiach 101</a></li>
                   <li><a href="https://learnmoshiach.com" target="_blank" className="hover:text-blue-400 transition-colors">LearnMoshiach.com</a></li>
                   <li><a href="#" className="hover:text-blue-400 transition-colors italic">Living with Moshiach</a></li>
-                  <li className="pt-8">
-                    <button 
-                      onClick={() => setIsAdminOpen(true)}
-                      className="flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors font-medium"
-                    >
-                      <Settings className="w-4 h-4" />
-                      Admin Portal
-                    </button>
-                  </li>
+                  {/* Removed Admin Portal button from footer */}
                 </ul>
               </div>
             </div>
