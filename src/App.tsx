@@ -6,6 +6,7 @@ import { TransitionWrapper } from './components/TransitionWrapper';
 import { AdminPanel } from './components/AdminPanel';
 import { Folder, FileText, Play, Link2, ArrowRight, Search, ChevronRight, PlayCircle, ChevronDown, ExternalLink, Plus, Video, Menu as MenuIcon, X, Globe, ArrowUpRight, Library, BookOpen, MessageSquare, Sparkles, Settings, AlertCircle, Upload, Edit3 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { PLACEHOLDER_CONTENT_HEBREW, PLACEHOLDER_CONTENT_ENGLISH } from './constants'; // Import placeholders
 
 const getYouTubeId = (url: string) => {
   if (!url) return null;
@@ -235,9 +236,6 @@ const MobileNavAccordion: React.FC<{ nodes: Node[]; parent: FolderNode; onSelect
   );
 };
 
-const PLACEHOLDER_CONTENT_HEBREW = 'תוכן קובץ DOCX זה יוצג כאן לאחר המרה ל-HTML.';
-const PLACEHOLDER_CONTENT_ENGLISH = 'This DOCX file content would appear here after conversion to HTML.';
-
 const App: React.FC = () => {
   const [nodes, setNodes] = useState<Node[]>([]);
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
@@ -345,12 +343,16 @@ const App: React.FC = () => {
   };
 
   const isPlaceholderContent = (file: FileNode) => {
-    const originalContentStripped = file.content.replace(/<[^>]*>?/gm, '').trim();
-    const translatedContentStripped = (file.translatedContent || '').replace(/<[^>]*>?/gm, '').trim();
+    const stripHtmlAndTrim = (html: string) => html.replace(/<[^>]*>?/gm, '').trim();
     
+    const originalContentStripped = stripHtmlAndTrim(file.content);
+    const translatedContentStripped = stripHtmlAndTrim(file.translatedContent || '');
+    const placeholderHebrewStripped = stripHtmlAndTrim(PLACEHOLDER_CONTENT_HEBREW);
+    const placeholderEnglishStripped = stripHtmlAndTrim(PLACEHOLDER_CONTENT_ENGLISH);
+
     return (
-      originalContentStripped.includes(PLACEHOLDER_CONTENT_HEBREW.replace(/<[^>]*>?/gm, '').trim()) ||
-      translatedContentStripped.includes(PLACEHOLDER_CONTENT_ENGLISH.replace(/<[^>]*>?/gm, '').trim())
+      originalContentStripped === placeholderHebrewStripped ||
+      translatedContentStripped === placeholderEnglishStripped
     );
   };
   

@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { storageService } from '../services/storageService';
 import { fileService } from '../services/fileService';
 import { Node, NodeType, FolderNode, FileNode } from '../types';
+import { PLACEHOLDER_CONTENT_HEBREW, PLACEHOLDER_CONTENT_ENGLISH } from '../constants'; // Import placeholders
 import { 
   X, 
   FolderPlus, 
@@ -28,7 +29,7 @@ interface AdminPanelProps {
   onClose: () => void;
   currentFolderId: string | null; 
   onRefresh: () => void;
-  editingNode?: Node | null; // Added for editing existing nodes
+  editingNode?: Node | null; 
 }
 
 export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId: initialFolderId, onRefresh, editingNode: propEditingNode }) => {
@@ -37,14 +38,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId
   const [name, setName] = useState('');
   const [url, setUrl] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [editingNode, setEditingNode] = useState<Node | null>(propEditingNode || null); // Use prop for initial editing node
+  const [editingNode, setEditingNode] = useState<Node | null>(propEditingNode || null); 
   const [content, setContent] = useState('');
   const [translatedContent, setTranslatedContent] = useState(''); 
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(initialFolderId);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [draggedNode, setDraggedNode] = useState<Node | null>(null);
   const [dragOverFolder, setDragOverFolder] = useState<string | null>(null);
-  const [isProcessingFile, setIsProcessingFile] = useState(false); // New state for file processing
+  const [isProcessingFile, setIsProcessingFile] = useState(false); 
 
   const editorRef = useRef<HTMLDivElement>(null);
   const translatedEditorRef = useRef<HTMLDivElement>(null); 
@@ -65,7 +66,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId
     fetchNodes();
   }, [initialFolderId]); 
 
-  // Effect to handle propEditingNode changes
   useEffect(() => {
     if (propEditingNode) {
       setEditingNode(propEditingNode);
@@ -73,7 +73,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId
       setContent(propEditingNode.type === 'file' ? propEditingNode.content : '');
       setTranslatedContent(propEditingNode.type === 'file' ? (propEditingNode as FileNode).translatedContent || '' : '');
       setUrl(propEditingNode.type === 'file' && propEditingNode.url ? propEditingNode.url : '');
-      setIsAdding('content'); // Set to content editing mode
+      setIsAdding('content'); 
       setSelectedFolderId(propEditingNode.parentId);
     } else {
       setEditingNode(null);
@@ -112,8 +112,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId
           name: nodeName,
           content: contentHtml,
           translatedContent: newTranslatedContent,
-          contentType: 'text', // Assuming DOCX are text content
-          url: undefined, // Clear URL if a DOCX is uploaded
+          contentType: 'text', 
+          url: undefined, 
         });
       } else {
         // Add new node
@@ -180,16 +180,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId
           name, 
           type: 'file', 
           parentId: selectedFolderId,
-          content: content || '', 
-          translatedContent: translatedContent || '', 
+          content: content || PLACEHOLDER_CONTENT_HEBREW, // Use placeholder if content is empty
+          translatedContent: translatedContent || PLACEHOLDER_CONTENT_ENGLISH, // Use placeholder if translated content is empty
           contentType, 
           url: url || undefined,
         });
       } else if (isAdding === 'content' && editingNode) {
         await storageService.updateNode(editingNode.id, { 
           name, 
-          content, 
-          translatedContent, 
+          content: content || PLACEHOLDER_CONTENT_HEBREW, 
+          translatedContent: translatedContent || PLACEHOLDER_CONTENT_ENGLISH, 
           url: url || undefined 
         });
       }
@@ -375,13 +375,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId
             
             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
               <button 
-                onClick={() => handleEdit(file)}
+                onClick={(e) => { e.stopPropagation(); handleEdit(file); }}
                 className="p-1 text-gray-500 hover:text-blue-600"
               >
                 <Edit3 className="w-4 h-4" />
               </button>
               <button 
-                onClick={() => handleDelete(file.id)}
+                onClick={(e) => { e.stopPropagation(); handleDelete(file.id); }}
                 className="p-1 text-gray-500 hover:text-red-600"
               >
                 <Trash2 className="w-4 h-4" />

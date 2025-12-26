@@ -1,31 +1,13 @@
 import { supabase } from '../integrations/supabase/client';
 import { Node, NodeType, FolderNode, FileNode } from '../types';
-import { INITIAL_DATA } from '../constants';
+import { PLACEHOLDER_CONTENT_HEBREW, PLACEHOLDER_CONTENT_ENGLISH } from '../constants'; // Import placeholders
 
 const LOCAL_STORAGE_KEY = 'moshiach_links_fs_v3';
 const MIGRATION_KEY = 'moshiach_links_migrated_to_supabase';
 
 export const storageService = {
-  // Fetches all nodes from Supabase. If local storage has data and hasn't been migrated, it migrates it.
+  // Fetches all nodes from Supabase.
   getNodes: async (): Promise<Node[]> => {
-    const hasMigrated = localStorage.getItem(MIGRATION_KEY);
-
-    if (!hasMigrated) {
-      const localData = localStorage.getItem(LOCAL_STORAGE_KEY);
-      if (localData) {
-        const nodesToMigrate: Node[] = JSON.parse(localData);
-        console.log("Migrating existing local data to Supabase...", nodesToMigrate);
-        await storageService.migrateNodesToSupabase(nodesToMigrate);
-        localStorage.setItem(MIGRATION_KEY, 'true');
-        localStorage.removeItem(LOCAL_STORAGE_KEY); // Clear local storage after migration
-      } else {
-        // If no local data, but also no migration flag, seed initial data from constants
-        console.log("No local data found, seeding initial data from constants to Supabase...");
-        await storageService.migrateNodesToSupabase(INITIAL_DATA);
-        localStorage.setItem(MIGRATION_KEY, 'true');
-      }
-    }
-
     const { data, error } = await supabase
       .from('documents')
       .select('*')
@@ -42,32 +24,6 @@ export const storageService = {
     })) as Node[];
   },
 
-  // Helper to migrate nodes to Supabase
-  migrateNodesToSupabase: async (nodes: Node[]) => {
-    // Filter out nodes that might already exist if this is a partial migration or retry
-    const existingSupabaseNodes = (await supabase.from('documents').select('id')).data?.map(n => n.id) || [];
-    const newNodes = nodes.filter(node => !existingSupabaseNodes.includes(node.id));
-
-    if (newNodes.length > 0) {
-      const { error } = await supabase
-        .from('documents')
-        .insert(newNodes.map(node => ({
-          ...node,
-          createdAt: new Date(node.createdAt).toISOString(), // Ensure ISO string format
-          parentId: node.parentId || null, // Ensure parentId is null if undefined
-          translated_content: (node as FileNode).translatedContent || null, // Map translatedContent to DB column
-        })));
-
-      if (error) {
-        console.error("Error migrating nodes to Supabase:", error);
-        throw error;
-      }
-      console.log(`Successfully migrated ${newNodes.length} nodes to Supabase.`);
-    } else {
-      console.log("No new nodes to migrate or all nodes already exist in Supabase.");
-    }
-  },
-  
   // Adds a new node to Supabase
   addNode: async (node: Omit<FolderNode, 'id' | 'createdAt'> | Omit<FileNode, 'id' | 'createdAt'>): Promise<Node> => {
     const newNode = {
@@ -75,12 +31,27 @@ export const storageService = {
       id: crypto.randomUUID(),
       createdAt: new Date().toISOString(), // Ensure ISO string format
       parentId: node.parentId || null, // Ensure parentId is null if undefined
-      translated_content: (node as FileNode).translatedContent || null, // Map translatedContent to DB column
     } as Node;
+
+    // If it's a file node and content is empty, set placeholders
+    if (newNode.type === 'file') {
+      const fileNode = newNode as FileNode;
+      if (!fileNode.content) {
+        fileNode.content = PLACEHOLDER_CONTENT_HEBREW;
+      }
+      if (!fileNode.translatedContent) {
+        fileNode.translatedContent = PLACEHOLDER_CONTENT_ENGLISH;
+      }
+    }
 
     const { data, error } = await supabase
       .from('documents')
-      .insert([newNode])
+      .insert([
+        {
+          ...newNode,
+          translated_content: (newNode as FileNode).translatedContent || null, // Map translatedContent to DB column
+        }
+      ])
       .select();
 
     if (error) {

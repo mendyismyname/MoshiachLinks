@@ -1,6 +1,7 @@
 import { supabase } from '../integrations/supabase/client';
 // @ts-ignore
 import * as mammoth from 'mammoth';
+import { PLACEHOLDER_CONTENT_HEBREW, PLACEHOLDER_CONTENT_ENGLISH } from '../constants'; // Import placeholders
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
@@ -8,7 +9,7 @@ const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 async function translateTextWithGemini(text: string): Promise<string> {
   if (!GEMINI_API_KEY) {
     console.warn("GEMINI_API_KEY is not set. Skipping translation.");
-    return "Translation service unavailable.";
+    return PLACEHOLDER_CONTENT_ENGLISH; // Return placeholder if API key is missing
   }
 
   const prompt = `Translate the following Hebrew text to English. Maintain HTML structure and formatting where possible. If the input is not Hebrew, return it as is:\n\n${text}`;
@@ -33,10 +34,10 @@ async function translateTextWithGemini(text: string): Promise<string> {
     const data = await response.json();
     // Extracting the text from the Gemini response structure
     const translatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    return translatedText || "Translation failed or returned empty.";
+    return translatedText || PLACEHOLDER_CONTENT_ENGLISH; // Return placeholder if translation fails
   } catch (error) {
     console.error("Error translating with Gemini:", error);
-    return `Translation error: ${error instanceof Error ? error.message : String(error)}`;
+    return PLACEHOLDER_CONTENT_ENGLISH; // Return placeholder on error
   }
 }
 
@@ -88,7 +89,7 @@ export const fileService = {
 
     } catch (err) {
       console.error("File processing or translation error:", err);
-      throw err;
+      return { contentHtml: PLACEHOLDER_CONTENT_HEBREW, translatedContent: PLACEHOLDER_CONTENT_ENGLISH }; // Return placeholders on error
     }
   }
 };
