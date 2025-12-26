@@ -28,14 +28,11 @@ const DualLabel: React.FC<{ name: string; className?: string; subClassName?: str
   if (parts.length < 2) return <span dir="auto" className={className}>{name}</span>;
   const [english, hebrew] = parts;
   
-  // Determine if the main class name includes font-serif
-  const isEnglishSerif = className.includes('font-serif');
-
   return (
     <div className={`flex flex-col ${invert ? 'items-end text-right' : 'items-start text-left'}`}>
       <span className={`leading-tight ${className}`}>{english}</span>
       <span 
-        className={`opacity-40 leading-tight mt-0.5 ${subClassName} whitespace-normal ${isEnglishSerif ? 'font-serif' : 'font-sans'} ${invert ? 'text-right' : ''}`} 
+        className={`opacity-60 leading-tight mt-0.5 ${subClassName} whitespace-normal font-sans ${invert ? 'text-right' : ''}`} 
         dir="rtl"
       >
         {hebrew}
