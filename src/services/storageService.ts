@@ -35,7 +35,11 @@ export const storageService = {
       console.error("Error fetching nodes from Supabase:", error);
       return [];
     }
-    return data as Node[];
+    return data.map(item => ({
+      ...item,
+      translatedContent: item.translated_content, // Map translated_content from DB to translatedContent in type
+      createdAt: new Date(item.createdAt).getTime(), // Ensure createdAt is a number
+    })) as Node[];
   },
 
   // Helper to migrate nodes to Supabase
@@ -51,6 +55,7 @@ export const storageService = {
           ...node,
           createdAt: new Date(node.createdAt).toISOString(), // Ensure ISO string format
           parentId: node.parentId || null, // Ensure parentId is null if undefined
+          translated_content: (node as FileNode).translatedContent || null, // Map translatedContent to DB column
         })));
 
       if (error) {
@@ -70,6 +75,7 @@ export const storageService = {
       id: crypto.randomUUID(),
       createdAt: new Date().toISOString(), // Ensure ISO string format
       parentId: node.parentId || null, // Ensure parentId is null if undefined
+      translated_content: (node as FileNode).translatedContent || null, // Map translatedContent to DB column
     } as Node;
 
     const { data, error } = await supabase
@@ -84,7 +90,11 @@ export const storageService = {
     if (!data || data.length === 0) {
       throw new Error("Failed to add node to Supabase.");
     }
-    return data[0] as Node;
+    return {
+      ...data[0],
+      translatedContent: data[0].translated_content,
+      createdAt: new Date(data[0].createdAt).getTime(),
+    } as Node;
   },
   
   // Deletes a node and its children from Supabase
@@ -103,12 +113,18 @@ export const storageService = {
   
   // Updates an existing node in Supabase
   updateNode: async (id: string, updates: Partial<Node>) => {
+    const updatePayload: any = {
+      ...updates,
+      updatedAt: new Date().toISOString(), // Add an updatedAt timestamp
+    };
+    if ('translatedContent' in updates) {
+      updatePayload.translated_content = updates.translatedContent;
+      delete updatePayload.translatedContent; // Remove frontend field before sending to DB
+    }
+
     const { error } = await supabase
       .from('documents')
-      .update({
-        ...updates,
-        updatedAt: new Date().toISOString(), // Add an updatedAt timestamp
-      })
+      .update(updatePayload)
       .eq('id', id);
 
     if (error) {

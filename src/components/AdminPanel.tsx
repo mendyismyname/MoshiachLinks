@@ -38,12 +38,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId
   const [error, setError] = useState<string | null>(null);
   const [editingNode, setEditingNode] = useState<Node | null>(null);
   const [content, setContent] = useState('');
+  const [translatedContent, setTranslatedContent] = useState(''); // New state for translated content
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(initialFolderId);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [draggedNode, setDraggedNode] = useState<Node | null>(null);
   const [dragOverFolder, setDragOverFolder] = useState<string | null>(null);
   
   const editorRef = useRef<HTMLDivElement>(null);
+  const translatedEditorRef = useRef<HTMLDivElement>(null); // Ref for translated content editor
 
   useEffect(() => {
     const fetchNodes = async () => {
@@ -62,10 +64,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId
     fetchNodes();
   }, [initialFolderId]); // Depend only on initialFolderId to avoid re-running on every nodes change
 
-  const handlePaste = (e: React.ClipboardEvent) => {
+  const handlePaste = (e: React.ClipboardEvent, targetEditor: 'original' | 'translated') => {
     e.preventDefault();
     const html = e.clipboardData.getData('text/html') || e.clipboardData.getData('text/plain');
     document.execCommand('insertHTML', false, html);
+    if (targetEditor === 'original') {
+      setContent(e.currentTarget.innerHTML);
+    } else {
+      setTranslatedContent(e.currentTarget.innerHTML);
+    }
   };
 
   const handleFileDrop = async (e: React.DragEvent) => {
@@ -79,11 +86,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId
       setIsAdding('file');
       
       try {
-        await fileService.processFile(file, selectedFolderId); // fileService.processFile now returns the new node
+        await fileService.processFile(file, selectedFolderId); 
         onRefresh();
-        setNodes(await storageService.getNodes()); // Re-fetch nodes after upload
+        setNodes(await storageService.getNodes()); 
         setName('');
         setUrl('');
+        setContent('');
+        setTranslatedContent('');
         setIsAdding(null);
       } catch (err) {
         setError("Error processing document.");
@@ -113,6 +122,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId
           type: 'file', 
           parentId: selectedFolderId,
           content: content || '', 
+          translatedContent: translatedContent || '', // Include translated content
           contentType, 
           url: url || undefined,
         });
@@ -121,6 +131,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId
         await storageService.updateNode(editingNode.id, { 
           name, 
           content, 
+          translatedContent, // Update translated content
           url: url || undefined 
         });
       }
@@ -128,10 +139,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId
       setName('');
       setUrl('');
       setContent('');
+      setTranslatedContent('');
       setIsAdding(null);
       setEditingNode(null);
       onRefresh();
-      setNodes(await storageService.getNodes()); // Re-fetch nodes after add/update
+      setNodes(await storageService.getNodes()); 
     } catch (err) {
       setError("Error saving content.");
     }
@@ -141,9 +153,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId
     setEditingNode(node);
     setName(node.name);
     setContent(node.type === 'file' ? node.content : '');
+    setTranslatedContent(node.type === 'file' ? (node as FileNode).translatedContent || '' : ''); // Set translated content for editing
     setUrl(node.type === 'file' && node.url ? node.url : '');
     setIsAdding('content');
-    setSelectedFolderId(node.parentId); // Set selected folder to parent of edited node
+    setSelectedFolderId(node.parentId); 
   };
 
   const handleDelete = async (id: string) => {
@@ -151,7 +164,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId
       try {
         await storageService.deleteNode(id);
         onRefresh();
-        setNodes(await storageService.getNodes()); // Re-fetch nodes after delete
+        setNodes(await storageService.getNodes()); 
       } catch (err) {
         setError("Error deleting content.");
       }
@@ -169,11 +182,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId
       setIsAdding('file');
       
       try {
-        await fileService.processFile(file, selectedFolderId); // fileService.processFile now returns the new node
+        await fileService.processFile(file, selectedFolderId); 
         onRefresh();
-        setNodes(await storageService.getNodes()); // Re-fetch nodes after upload
+        setNodes(await storageService.getNodes()); 
         setName('');
         setUrl('');
+        setContent('');
+        setTranslatedContent('');
         setIsAdding(null);
       } catch (err) {
         setError("Error processing document.");
@@ -197,7 +212,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId
     try {
       await storageService.updateNode(nodeId, { parentId: newParentId });
       onRefresh();
-      setNodes(await storageService.getNodes()); // Re-fetch nodes after move
+      setNodes(await storageService.getNodes()); 
     } catch (err) {
       setError("Error moving node.");
     }
@@ -222,7 +237,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId
     setDragOverFolder(null);
     
     if (draggedNode) {
-      // Prevent dropping a folder into itself or its children
       if (draggedNode.type === 'folder') {
         const isChild = (parentId: string | null): boolean => {
           if (!parentId) return false;
@@ -256,7 +270,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId
     return (
       <div className="ml-4">
         {folders.map(folder => (
-          <div key={folder.id} className="mb-1 group"> {/* Added group here for hover effects */}
+          <div key={folder.id} className="mb-1 group"> 
             <div 
               className={`flex items-center p-2 rounded-lg cursor-pointer hover:bg-gray-100 ${
                 selectedFolderId === folder.id ? 'bg-blue-50 border border-blue-200' : ''
@@ -286,19 +300,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId
               
               <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleEdit(folder);
-                  }}
+                  onClick={(e) => { e.stopPropagation(); handleEdit(folder); }}
                   className="p-1 text-gray-500 hover:text-blue-600"
                 >
                   <Edit3 className="w-4 h-4" />
                 </button>
                 <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDelete(folder.id);
-                  }}
+                  onClick={(e) => { e.stopPropagation(); handleDelete(folder.id); }}
                   className="p-1 text-gray-500 hover:text-red-600"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -317,7 +325,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId
         {files.map(file => (
           <div 
             key={file.id}
-            className={`flex items-center p-2 rounded-lg mb-1 hover:bg-gray-100 group ${ // Added group here
+            className={`flex items-center p-2 rounded-lg mb-1 hover:bg-gray-100 group ${ 
               dragOverFolder === file.id ? 'bg-blue-100 border border-blue-300' : ''
             }`}
             draggable
@@ -407,14 +415,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId
               
               <div className="flex gap-2">
                 <button 
-                  onClick={() => { setIsAdding('folder'); setEditingNode(null); setName(''); setUrl(''); setContent(''); setError(null); }}
+                  onClick={() => { setIsAdding('folder'); setEditingNode(null); setName(''); setUrl(''); setContent(''); setTranslatedContent(''); setError(null); }}
                   className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
                   <FolderPlus className="w-4 h-4" />
                   New Folder
                 </button>
                 <button 
-                  onClick={() => { setIsAdding('file'); setEditingNode(null); setName(''); setUrl(''); setContent(''); setError(null); }}
+                  onClick={() => { setIsAdding('file'); setEditingNode(null); setName(''); setUrl(''); setContent(''); setTranslatedContent(''); setError(null); }}
                   className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
                 >
                   <FilePlus className="w-4 h-4" />
@@ -526,14 +534,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId
                     <p className="text-gray-500 mb-4">Add content by creating new entries or uploading files</p>
                     <div className="flex justify-center gap-3">
                       <button 
-                        onClick={() => { setIsAdding('folder'); setEditingNode(null); setName(''); setUrl(''); setContent(''); setError(null); }}
+                        onClick={() => { setIsAdding('folder'); setEditingNode(null); setName(''); setUrl(''); setContent(''); setTranslatedContent(''); setError(null); }}
                         className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                       >
                         <FolderPlus className="w-4 h-4" />
                         New Folder
                       </button>
                       <button 
-                        onClick={() => { setIsAdding('file'); setEditingNode(null); setName(''); setUrl(''); setContent(''); setError(null); }}
+                        onClick={() => { setIsAdding('file'); setEditingNode(null); setName(''); setUrl(''); setContent(''); setTranslatedContent(''); setError(null); }}
                         className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
                       >
                         <FilePlus className="w-4 h-4" />
@@ -577,16 +585,29 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId
                       </div>
                       
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Content</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Original Content</label>
                         <div 
                           ref={editorRef}
                           contentEditable
-                          onPaste={handlePaste}
+                          onPaste={(e) => handlePaste(e, 'original')}
                           className="w-full min-h-[200px] px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 overflow-y-auto"
                           dangerouslySetInnerHTML={{ __html: content }}
                           onInput={(e) => setContent(e.currentTarget.innerHTML)}
                         />
                         <p className="mt-1 text-sm text-gray-500">Paste formatted text or type content here</p>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Translated Content (Optional)</label>
+                        <div 
+                          ref={translatedEditorRef}
+                          contentEditable
+                          onPaste={(e) => handlePaste(e, 'translated')}
+                          className="w-full min-h-[200px] px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 overflow-y-auto"
+                          dangerouslySetInnerHTML={{ __html: translatedContent }}
+                          onInput={(e) => setTranslatedContent(e.currentTarget.innerHTML)}
+                        />
+                        <p className="mt-1 text-sm text-gray-500">Automatically generated for DOCX uploads, can be manually edited.</p>
                       </div>
                     </>
                   ) : null}
@@ -607,6 +628,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId
                         setName('');
                         setUrl('');
                         setContent('');
+                        setTranslatedContent('');
                       }}
                       className="px-6 py-2.5 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors"
                     >

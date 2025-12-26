@@ -4,7 +4,7 @@ import { fileService } from './services/fileService';
 import { Node, FileNode, FolderNode } from './types';
 import { TransitionWrapper } from './components/TransitionWrapper';
 import { AdminPanel } from './components/AdminPanel';
-import { Folder, FileText, Play, Link2, ArrowRight, Search, ChevronRight, PlayCircle, ChevronDown, ExternalLink, Plus, Video, Menu as MenuIcon, X, Globe, ArrowUpRight, Library, BookOpen, MessageSquare, Sparkles, Settings, AlertCircle } from 'lucide-react';
+import { Folder, FileText, Play, Link2, ArrowRight, Search, ChevronRight, PlayCircle, ChevronDown, ExternalLink, Plus, Video, Menu as MenuIcon, X, Globe, ArrowUpRight, Library, BookOpen, MessageSquare, Sparkles, Settings, AlertCircle, Upload } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 
 const getYouTubeId = (url: string) => {
@@ -242,15 +242,18 @@ const App: React.FC = () => {
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [isLoading, setIsLoading] = useState(true); // New loading state
+  const [isLoading, setIsLoading] = useState(true); 
   const [adminPassword, setAdminPassword] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [adminError, setAdminError] = useState<string | null>(null);
+  const [isUploadingFile, setIsUploadingFile] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [showTranslatedContent, setShowTranslatedContent] = useState(false); // New state for translation toggle
   
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true);
-      const storedNodes = await storageService.getNodes(); // Fetch from Supabase
+      const storedNodes = await storageService.getNodes(); 
       setNodes(storedNodes);
       setIsLoading(false);
     };
@@ -274,7 +277,7 @@ const App: React.FC = () => {
   
   const featuredVideos = useMemo(() => 
     nodes.filter(n => n.type === 'file' && (n as FileNode).contentType === 'video')
-         .sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) // Sort by createdAt timestamp
+         .sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) 
          .slice(0, 5) as FileNode[], 
     [nodes]
   );
@@ -304,6 +307,29 @@ const App: React.FC = () => {
   };
   
   const getCleanName = (name: string) => name.split('|')[0].trim();
+
+  const handleFileUploadFromEmptyState = async (e: React.ChangeEvent<HTMLInputElement> | React.DragEvent) => {
+    e.preventDefault();
+    setUploadError(null);
+    setIsUploadingFile(true);
+
+    const files = 'dataTransfer' in e ? Array.from(e.dataTransfer.files) : Array.from(e.target.files || []);
+    
+    if (files.length > 0) {
+      const file = files[0];
+      try {
+        await fileService.processFile(file, currentFolderId);
+        refreshData();
+        setIsUploadingFile(false);
+      } catch (err) {
+        console.error("Upload error:", err);
+        setUploadError("Error processing document. Please try again.");
+        setIsUploadingFile(false);
+      }
+    } else {
+      setIsUploadingFile(false);
+    }
+  };
   
   if (isLoading) {
     return (
@@ -433,7 +459,6 @@ const App: React.FC = () => {
                   />
                 ))}
               </div>
-              {/* Removed Admin Portal button from mobile menu */}
             </motion.div>
           </>
         )}
@@ -495,13 +520,25 @@ const App: React.FC = () => {
                     </a>
                   </div>
                 )}
+
+                {selectedFile.contentType === 'text' && selectedFile.translatedContent && (
+                  <div className="flex justify-end mb-8">
+                    <button
+                      onClick={() => setShowTranslatedContent(!showTranslatedContent)}
+                      className="px-4 py-2 bg-gray-100 text-gray-700 rounded-full text-sm font-medium hover:bg-gray-200 transition-colors flex items-center gap-2"
+                    >
+                      {showTranslatedContent ? 'Show Original' : 'Show Translation'}
+                      <MessageSquare className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
                 
                 <article 
                   className={`rich-text-content text-xl md:text-3xl font-light opacity-95 leading-relaxed max-w-none prose prose-2xl prose-blue ${
-                    selectedFile.name.match(/[א-ת]/) ? 'font-serif text-right' : 'font-sans'
+                    (showTranslatedContent ? selectedFile.translatedContent : selectedFile.content)?.match(/[א-ת]/) ? 'font-serif text-right' : 'font-sans'
                   }`}
-                  dir={selectedFile.name.match(/[א-ת]/) ? "rtl" : "ltr"}
-                  dangerouslySetInnerHTML={{ __html: linkifyContent(selectedFile.content) }}
+                  dir={(showTranslatedContent ? selectedFile.translatedContent : selectedFile.content)?.match(/[א-ת]/) ? "rtl" : "ltr"}
+                  dangerouslySetInnerHTML={{ __html: linkifyContent(showTranslatedContent ? selectedFile.translatedContent || '' : selectedFile.content) }}
                 />
               </div>
             </TransitionWrapper>
@@ -565,6 +602,52 @@ const App: React.FC = () => {
                     )
                   ))}
                 </div>
+                
+                {nodes.filter(n => n.parentId === currentFolderId).length === 0 && (
+                  <div className="text-center py-12">
+                    <Folder className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-700 mb-2">This folder is empty</h3>
+                    <p className="text-gray-500 mb-4">Add content by uploading a DOCX file.</p>
+                    
+                    {uploadError && (
+                      <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-lg flex items-center gap-3 justify-center">
+                        <AlertCircle className="w-5 h-5" />
+                        {uploadError}
+                      </div>
+                    )}
+
+                    <div 
+                      className="border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center hover:border-blue-400 transition-colors mt-6"
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = 'copy';
+                      }}
+                      onDrop={handleFileUploadFromEmptyState}
+                    >
+                      {isUploadingFile ? (
+                        <div className="flex flex-col items-center justify-center">
+                          <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mb-4"></div>
+                          <p className="text-blue-600 font-medium">Uploading and translating...</p>
+                        </div>
+                      ) : (
+                        <>
+                          <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                          <h3 className="text-lg font-medium text-gray-700 mb-2">Upload DOCX File</h3>
+                          <p className="text-gray-500 mb-4">Drag and drop files here or click to browse</p>
+                          <label className="px-4 py-2 bg-blue-600 text-white rounded-lg cursor-pointer hover:bg-blue-700 transition-colors">
+                            Choose File
+                            <input 
+                              type="file" 
+                              accept=".docx" 
+                              onChange={handleFileUploadFromEmptyState} 
+                              className="hidden" 
+                            />
+                          </label>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </TransitionWrapper>
           ) : (

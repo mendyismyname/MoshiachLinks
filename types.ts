@@ -1,4 +1,3 @@
-
 export type NodeType = 'folder' | 'file';
 
 export interface BaseNode {
@@ -16,6 +15,7 @@ export interface FolderNode extends BaseNode {
 export interface FileNode extends BaseNode {
   type: 'file';
   content: string; // Markdown or plain text
+  translatedContent?: string; // New field for translated content
   contentType: 'text' | 'video' | 'link';
   url?: string;
 }
