@@ -222,7 +222,7 @@ const MobileNavAccordion: React.FC<{ nodes: Node[]; parent: FolderNode; onSelect
                   </div>
                   <DualLabel 
                     name={node.name} 
-                    className="text-sm font-medium text-gray-600 truncate" 
+                    className="text-sm font-medium text-gray-600" 
                     subClassName="text-[10px]" 
                   />
                 </button>
