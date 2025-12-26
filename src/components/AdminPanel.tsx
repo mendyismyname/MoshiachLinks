@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { storageService } from '../services/storageService';
 import { fileService } from '../services/fileService';
 import { Node, NodeType, FolderNode, FileNode } from '../types';
@@ -42,7 +42,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId
   const [content, setContent] = useState('');
   const [translatedContent, setTranslatedContent] = useState(''); 
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(initialFolderId);
-  const [expandedFolders, setExpandedFolders] = new Set<string>();
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(() => new Set()); // Initialize with useState
   const [draggedNode, setDraggedNode] = useState<Node | null>(null);
   const [dragOverFolder, setDragOverFolder] = useState<string | null>(null);
   const [isProcessingFile, setIsProcessingFile] = useState(false); 
@@ -54,6 +54,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId
     const fetchNodes = async () => {
       const fetchedNodes = await storageService.getNodes();
       setNodes(fetchedNodes);
+      // Initialize expanded folders to include the initialFolderId and its ancestors
       const initialExpanded = new Set<string>();
       let current = initialFolderId;
       while (current) {
@@ -64,7 +65,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId
       setExpandedFolders(initialExpanded);
     };
     fetchNodes();
-  }, [initialFolderId]); 
+  }, [initialFolderId, onRefresh]); // Depend on initialFolderId and onRefresh to re-fetch and re-evaluate expanded folders if data changes
 
   useEffect(() => {
     if (propEditingNode) {
