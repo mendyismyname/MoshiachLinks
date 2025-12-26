@@ -3,8 +3,8 @@ import { storageService } from './services/storageService';
 import { fileService } from './services/fileService';
 import { Node, FileNode, FolderNode } from './types';
 import { TransitionWrapper } from './components/TransitionWrapper';
-import { AdminPanel } from './components/AdminPanel'; // Changed to named import
-import { Folder, FileText, Trash2, Play, Link2, ArrowRight, Search, ChevronRight, PlayCircle, ChevronDown, ExternalLink, Plus, Video, Menu as MenuIcon, X, Globe, ArrowUpRight, Library, BookOpen, MessageSquare, Sparkles, Settings } from 'lucide-react';
+import { AdminPanel } from './components/AdminPanel';
+import { Folder, FileText, Play, Link2, ArrowRight, Search, ChevronRight, PlayCircle, ChevronDown, ExternalLink, Plus, Video, Menu as MenuIcon, X, Globe, ArrowUpRight, Library, BookOpen, MessageSquare, Sparkles, Settings } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 
 const getYouTubeId = (url: string) => {
@@ -253,58 +253,12 @@ const App: React.FC = () => {
     return nodes.filter(n => n.name.toLowerCase().includes(searchQuery.toLowerCase())).slice(0, 5);
   }, [nodes, searchQuery]);
   
-  const featuredVideos = useMemo(() => [
-    {
-      id: 'v-1',
-      name: 'The Messianic Vision | חזון הגאולה',
-      type: 'file',
-      parentId: 'f-videos',
-      content: '<p>Exploring the profound vision of the Messianic era as described by the sages and mystical texts.</p>',
-      contentType: 'video',
-      url: 'https://www.youtube.com/watch?v=0TDyuTfvBhk&list=PLYTqRxW76j8DexSCaC7of4e0xsW42kXIR',
-      createdAt: Date.now() - 5
-    },
-    {
-      id: 'v-2',
-      name: 'Anticipating Redemption | ציפייה לישועה',
-      type: 'file',
-      parentId: 'f-videos',
-      content: '<p>Understanding the daily mitzvah of anticipating the Redemption and its practical application in our generation.</p>',
-      contentType: 'video',
-      url: 'https://www.youtube.com/watch?v=yw9W78m5vmE&list=PLYTqRxW76j8DexSCaC7of4e0xsW42kXIR&index=2&pp=iAQB',
-      createdAt: Date.now() - 6
-    },
-    {
-      id: 'v-3',
-      name: 'The World of Resurrection | עולם התחייה',
-      type: 'file',
-      parentId: 'f-videos',
-      content: '<p>Delving into the mystical teachings about the World of Resurrection and its connection to our present service.</p>',
-      contentType: 'video',
-      url: 'https://www.youtube.com/watch?v=YckeRM72uzY&list=PLYTqRxW76j8DexSCaC7of4e0xsW42kXIR&index=3&pp=iAQB',
-      createdAt: Date.now() - 7
-    },
-    {
-      id: 'v-4',
-      name: 'Preparing for the Messianic Era | הכנות לימות המשיח',
-      type: 'file',
-      parentId: 'f-videos',
-      content: '<p>Practical guidance on how to prepare ourselves and our communities for the imminent arrival of the Messianic era.</p>',
-      contentType: 'video',
-      url: 'https://www.youtube.com/watch?v=Q2976qXphKU&list=PLYTqRxW76j8DexSCaC7of4e0xsW42kXIR&index=4&pp=iAQB',
-      createdAt: Date.now() - 8
-    },
-    {
-      id: 'v-5',
-      name: 'The Geulah Process | תהליך הגאולה',
-      type: 'file',
-      parentId: 'f-videos',
-      content: '<p>A comprehensive overview of the stages and processes leading to the ultimate Redemption.</p>',
-      contentType: 'video',
-      url: 'https://www.youtube.com/watch?v=R7sNI5JvU5M&list=PLYTqRxW76j8DexSCaC7of4e0xsW42kXIR&index=5&pp=iAQB',
-      createdAt: Date.now() - 9
-    }
-  ] as FileNode[], []);
+  const featuredVideos = useMemo(() => 
+    nodes.filter(n => n.type === 'file' && (n as FileNode).contentType === 'video')
+         .sort((a,b) => b.createdAt - a.createdAt)
+         .slice(0, 5) as FileNode[], 
+    [nodes]
+  );
   
   const breadcrumbs = useMemo(() => {
     const crumbs: Node[] = [];

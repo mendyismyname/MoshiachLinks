@@ -26,10 +26,11 @@ import {
 
 interface AdminPanelProps {
   onClose: () => void;
+  currentFolderId: string | null; // This prop is now used for initial state, not controlled
   onRefresh: () => void;
 }
 
-const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, onRefresh }) => {
+export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId: initialFolderId, onRefresh }) => {
   const [nodes, setNodes] = useState<Node[]>(storageService.getNodes());
   const [isAdding, setIsAdding] = useState<NodeType | 'content' | null>(null);
   const [name, setName] = useState('');
@@ -37,7 +38,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, onRefresh }) => {
   const [error, setError] = useState<string | null>(null);
   const [editingNode, setEditingNode] = useState<Node | null>(null);
   const [content, setContent] = useState('');
-  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(initialFolderId);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [draggedNode, setDraggedNode] = useState<Node | null>(null);
   const [dragOverFolder, setDragOverFolder] = useState<string | null>(null);
@@ -46,7 +47,16 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, onRefresh }) => {
 
   useEffect(() => {
     setNodes(storageService.getNodes());
-  }, []);
+    // Initialize expanded folders to include the initialFolderId and its ancestors
+    const initialExpanded = new Set<string>();
+    let current = initialFolderId;
+    while (current) {
+      initialExpanded.add(current);
+      const parent = nodes.find(n => n.id === current)?.parentId;
+      current = parent;
+    }
+    setExpandedFolders(initialExpanded);
+  }, [initialFolderId, nodes]); // Depend on nodes to re-evaluate expanded folders if data changes
 
   const handlePaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
@@ -129,7 +139,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, onRefresh }) => {
     setContent(node.type === 'file' ? node.content : '');
     setUrl(node.type === 'file' && node.url ? node.url : '');
     setIsAdding('content');
-    setSelectedFolderId(node.parentId);
+    setSelectedFolderId(node.parentId); // Set selected folder to parent of edited node
   };
 
   const handleDelete = (id: string) => {
