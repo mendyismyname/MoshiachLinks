@@ -212,7 +212,7 @@ const MobileNavAccordion: React.FC<{ nodes: Node[]; parent: FolderNode; onSelect
                       (node as FileNode).contentType === 'video' ? 
                         <Video className="w-4 h-4 opacity-40" /> : 
                         <FileText className="w-4 h-4 opacity-40" />
-                    }
+                  }
                   </div>
                   <DualLabel 
                     name={node.name} 
@@ -536,14 +536,6 @@ const App: React.FC = () => {
           </div>
           
           <button 
-            onClick={() => setIsMembershipOpen(true)}
-            className="hidden md:flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-yellow-500 to-amber-600 text-white rounded-full text-xs font-bold hover:scale-105 active:scale-95 transition-all shadow-md"
-          >
-            <Crown className="w-3.5 h-3.5" />
-            <span>Join Club</span>
-          </button>
-          
-          <button 
             onClick={() => setIsAdminOpen(true)}
             className="p-2 bg-blue-600 text-white rounded-full shadow-lg hover:scale-105 active:scale-95 transition-all"
           >
@@ -797,21 +789,6 @@ const App: React.FC = () => {
                     </button>
                   )}
                 </motion.div>
-                
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 1, delay: 1.2 }}
-                  className="mt-8"
-                >
-                  <button 
-                    onClick={() => setIsMembershipOpen(true)}
-                    className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-yellow-500 to-amber-600 text-white rounded-full text-sm font-bold hover:scale-105 active:scale-95 transition-all shadow-md"
-                  >
-                    <Crown className="w-4 h-4" />
-                    Join the Moshiach Club
-                  </button>
-                </motion.div>
               </section>
               
               {/* Quick Links Grid Section */}
@@ -988,7 +965,16 @@ const App: React.FC = () => {
                   <li><a href="https://chabad.org" target="_blank" className="hover:text-blue-400 transition-colors">Chabad: Moshiach 101</a></li>
                   <li><a href="https://learnmoshiach.com" target="_blank" className="hover:text-blue-400 transition-colors">LearnMoshiach.com</a></li>
                   <li><a href="#" className="hover:text-blue-400 transition-colors italic">Living with Moshiach</a></li>
-                  <li className="pt-6">
+                  <li className="pt-4">
+                    <button 
+                      onClick={() => setIsMembershipOpen(true)}
+                      className="flex items-center gap-1.5 text-yellow-400 hover:text-yellow-300 transition-colors font-medium text-sm"
+                    >
+                      <Crown className="w-3.5 h-3.5" />
+                      Join Moshiach Club
+                    </button>
+                  </li>
+                  <li className="pt-2">
                     <button 
                       onClick={() => setIsAdminOpen(true)}
                       className="flex items-center gap-1.5 text-blue-400 hover:text-blue-300 transition-colors font-medium text-sm"
@@ -1014,7 +1000,7 @@ const App: React.FC = () => {
       </footer>
       
       <AnimatePresence>
-        {isAdminOpen && <AdminPanel onClose={() => setIsAdminOpen(false)} currentFolderId={currentFolderId} onRefresh={refreshData} />}
+        {isAdminOpen && <AdminPanel onClose={() => setIsAdminOpen(false)} onRefresh={refreshData} />}
       </AnimatePresence>
     </div>
   );
