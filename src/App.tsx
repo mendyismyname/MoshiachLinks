@@ -32,7 +32,7 @@ const DualLabel: React.FC<{ name: string; className?: string; subClassName?: str
     <div className={`flex flex-col ${invert ? 'items-end text-right' : 'items-start text-left'}`}>
       <span className={`leading-tight ${className}`}>{english}</span>
       <span 
-        className={`opacity-60 leading-tight mt-0.5 ${subClassName} whitespace-normal font-sans ${invert ? 'text-right' : ''}`} 
+        className={`opacity-80 leading-tight mt-0.5 ${subClassName} whitespace-normal font-sans ${invert ? 'text-right' : ''}`} 
         dir="rtl"
       >
         {hebrew}

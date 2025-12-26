@@ -122,6 +122,7 @@ export const INITIAL_DATA: Node[] = [
   // DOCX Files - These entries are placeholders. Their content will be populated
   // when the corresponding .docx files are uploaded via the Admin Panel.
   // The fileService will process the DOCX into HTML content.
+  // To display content from these files, please upload them through the Admin Panel.
   { id: 'file-magilat-chanukah', name: 'Megilat Chanukah | מגילת חנוכה לע"ל', type: 'file', parentId: 'f-notes', content: '', contentType: 'text', createdAt: Date.now() - 140 },
   { id: 'file-vilachom-milchemet', name: 'And He Shall Wage the Wars of G-d | וילחום מלחמת ה\'', type: 'file', parentId: 'sf-rambam-11-h4', content: '', contentType: 'text', createdAt: Date.now() - 141 },
   { id: 'file-pib-reish-halacha-b', name: 'Chapter 12, Beginning of Halacha 2 | פי"ב ריש הלכה ב\'', type: 'file', parentId: 'sf-rambam-12-h2', content: '', contentType: 'text', createdAt: Date.now() - 142 },
