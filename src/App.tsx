@@ -235,8 +235,8 @@ const MobileNavAccordion: React.FC<{ nodes: Node[]; parent: FolderNode; onSelect
   );
 };
 
-const PLACEHOLDER_CONTENT_HEBREW = '<div dir="rtl" class="text-right"><p>תוכן קובץ DOCX זה יוצג כאן לאחר המרה ל-HTML.</p><p>This DOCX file content would appear here after conversion to HTML.</p></div>';
-const PLACEHOLDER_CONTENT_ENGLISH = '<div dir="ltr"><p>The content of this DOCX file will be displayed here after conversion to HTML and translation.</p></div>';
+const PLACEHOLDER_CONTENT_HEBREW = 'תוכן קובץ DOCX זה יוצג כאן לאחר המרה ל-HTML.';
+const PLACEHOLDER_CONTENT_ENGLISH = 'This DOCX file content would appear here after conversion to HTML.';
 
 const App: React.FC = () => {
   const [nodes, setNodes] = useState<Node[]>([]);
@@ -345,7 +345,13 @@ const App: React.FC = () => {
   };
 
   const isPlaceholderContent = (file: FileNode) => {
-    return file.content === PLACEHOLDER_CONTENT_HEBREW || file.translatedContent === PLACEHOLDER_CONTENT_ENGLISH;
+    const originalContentStripped = file.content.replace(/<[^>]*>?/gm, '').trim();
+    const translatedContentStripped = (file.translatedContent || '').replace(/<[^>]*>?/gm, '').trim();
+    
+    return (
+      originalContentStripped.includes(PLACEHOLDER_CONTENT_HEBREW.replace(/<[^>]*>?/gm, '').trim()) ||
+      translatedContentStripped.includes(PLACEHOLDER_CONTENT_ENGLISH.replace(/<[^>]*>?/gm, '').trim())
+    );
   };
   
   if (isLoading) {
@@ -476,7 +482,6 @@ const App: React.FC = () => {
                   />
                 ))}
               </div>
-              {/* Admin Portal button removed from here */}
             </motion.div>
           </>
         )}
@@ -918,7 +923,6 @@ const App: React.FC = () => {
                   <li><a href="https://chabad.org" target="_blank" className="hover:text-blue-400 transition-colors">Chabad: Moshiach 101</a></li>
                   <li><a href="https://learnmoshiach.com" target="_blank" className="hover:text-blue-400 transition-colors">LearnMoshiach.com</a></li>
                   <li><a href="#" className="hover:text-blue-400 transition-colors italic">Living with Moshiach</a></li>
-                  {/* Admin Portal button removed from footer */}
                 </ul>
               </div>
             </div>
