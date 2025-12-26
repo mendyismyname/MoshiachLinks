@@ -52,7 +52,7 @@ export const storageService = {
           translated_content: (newNode as FileNode).translatedContent || null, // Map translatedContent to DB column
         }
       ])
-      .select();
+.select();
 
     if (error) {
       console.error("Error adding node to Supabase:", error);
