@@ -30,7 +30,7 @@ const DualLabel: React.FC<{ name: string; className?: string; subClassName?: str
   return (
     <div className={`flex flex-col ${invert ? 'items-end text-right' : 'items-start text-left'}`}>
       <span className={`leading-tight ${className}`}>{english}</span>
-      <span className={`opacity-40 font-serif leading-tight mt-0.5 ${subClassName}`} dir="rtl">{hebrew}</span>
+      <span className={`opacity-40 font-sans leading-tight mt-0.5 ${subClassName} whitespace-normal`} dir="rtl">{hebrew}</span>
     </div>
   );
 };
@@ -236,9 +236,15 @@ const App: React.FC = () => {
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isLoading, setIsLoading] = useState(true); // New loading state
   
   useEffect(() => {
-    refreshData();
+    const loadData = () => {
+      const storedNodes = storageService.getNodes();
+      setNodes(storedNodes);
+      setIsLoading(false); // Set loading to false after data is loaded
+    };
+    loadData();
   }, []);
   
   const refreshData = () => setNodes(storageService.getNodes());
@@ -286,83 +292,93 @@ const App: React.FC = () => {
   
   const getCleanName = (name: string) => name.split('|')[0].trim();
   
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+        <div className="text-2xl font-serif text-gray-700 dark:text-gray-300 animate-pulse">Loading Moshiach Links...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="fixed top-0 left-0 right-0 z-[160] glass h-24 flex items-center justify-between px-6 md:px-12">
-        <div className="flex items-center gap-4 md:gap-8 h-full">
-          {/* Mobile Hamburger */}
-          <button 
-            onClick={() => setIsMobileMenuOpen(true)}
-            className="xl:hidden p-2.5 bg-black/[0.03] rounded-full hover:bg-black/[0.08] transition-all"
-          >
-            <MenuIcon className="w-5 h-5" />
-          </button>
-          
-          <div 
-            className="flex flex-col cursor-pointer group mx-auto xl:mx-0"
-            onClick={() => {
-              setCurrentFolderId(null);
-              setSelectedFile(null);
-            }}
-          >
-            <span className="font-serif italic text-xl md:text-2xl font-black leading-none text-blue-700 tracking-tighter">Moshiach Links</span>
-            <span className="hidden sm:block text-[9px] md:text-[10px] font-mono tracking-[0.2em] opacity-40 font-black mt-1 uppercase">Studies on Redemption</span>
+      <header className="fixed top-0 left-0 right-0 z-[160] glass h-24 flex items-center px-6 md:px-12">
+        <div className="max-w-[1900px] mx-auto w-full flex items-center justify-between h-full"> {/* Added max-w and mx-auto */}
+          <div className="flex items-center gap-4 md:gap-8 h-full">
+            {/* Mobile Hamburger */}
+            <button 
+              onClick={() => setIsMobileMenuOpen(true)}
+              className="xl:hidden p-2.5 bg-black/[0.03] rounded-full hover:bg-black/[0.08] transition-all"
+            >
+              <MenuIcon className="w-5 h-5" />
+            </button>
+            
+            <div 
+              className="flex flex-col cursor-pointer group" // Removed mx-auto xl:mx-0
+              onClick={() => {
+                setCurrentFolderId(null);
+                setSelectedFile(null);
+              }}
+            >
+              <span className="font-serif italic text-xl md:text-2xl font-black leading-none text-blue-700 tracking-tighter">Moshiach Links</span>
+              <span className="hidden sm:block text-[9px] md:text-[10px] font-mono tracking-[0.2em] opacity-40 font-black mt-1 uppercase">Studies on Redemption</span>
+            </div>
+            
+            <nav className="hidden xl:flex items-center gap-0 h-full ml-4 2xl:ml-10 border-l border-black/5 pl-4 2xl:pl-10 overflow-x-auto no-scrollbar flex-shrink-0"> {/* Added overflow-x-auto no-scrollbar flex-shrink-0 */}
+              {topLevelFolders.map(folder => (
+                <NavDropdown 
+                  key={folder.id} 
+                  nodes={nodes} 
+                  parent={folder} 
+                  onSelect={handleSelectNode} 
+                />
+              ))}
+            </nav>
           </div>
           
-          <nav className="hidden xl:flex items-center gap-0 h-full ml-4 2xl:ml-10 border-l border-black/5 pl-4 2xl:pl-10 overflow-hidden">
-            {topLevelFolders.map(folder => (
-              <NavDropdown 
-                key={folder.id} 
-                nodes={nodes} 
-                parent={folder} 
-                onSelect={handleSelectNode} 
+          <div className="flex items-center gap-3 md:gap-6">
+            <div className="hidden lg:flex relative group w-[180px] xl:w-[240px]">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 opacity-30 group-focus-within:text-blue-600 group-focus-within:opacity-100 transition-all" />
+              <input
+                type="text"
+                placeholder="Search Archive..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-black/[0.03] rounded-full py-2 pl-11 pr-4 text-sm font-medium focus:outline-none focus:bg-white focus:ring-4 focus:ring-blue-600/5 border border-transparent focus:border-blue-600/10 transition-all"
               />
-            ))}
-          </nav>
-        </div>
-        
-        <div className="flex items-center gap-3 md:gap-6">
-          <div className="hidden lg:flex relative group w-[180px] xl:w-[240px]">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 opacity-30 group-focus-within:text-blue-600 group-focus-within:opacity-100 transition-all" />
-            <input
-              type="text"
-              placeholder="Search Archive..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-black/[0.03] rounded-full py-2 pl-11 pr-4 text-sm font-medium focus:outline-none focus:bg-white focus:ring-4 focus:ring-blue-600/5 border border-transparent focus:border-blue-600/10 transition-all"
-            />
-            <AnimatePresence>
-              {searchQuery && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 5 }}
-                  className="absolute top-full right-0 mt-4 w-80 glass rounded-2xl border border-black/5 shadow-2xl p-4 overflow-hidden"
-                >
-                  {searchResults.length > 0 ? searchResults.map(n => (
-                    <button
-                      key={n.id}
-                      onClick={() => {
-                        handleSelectNode(n);
-                        setSearchQuery('');
-                      }}
-                      className="w-full text-left p-3 hover:bg-black/5 rounded-xl flex items-center gap-4 transition-all"
-                    >
-                      <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400">
-                        {n.type === 'folder' ? <Folder className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
-                      </div>
-                      <DualLabel 
-                        name={n.name} 
-                        className="text-sm font-bold truncate" 
-                        subClassName="text-[10px]" 
-                      />
-                    </button>
-                  )) : (
-                    <div className="p-4 text-center text-xs opacity-30">No results found</div>
-                  )}
-                </motion.div>
-              )}
-            </AnimatePresence>
+              <AnimatePresence>
+                {searchQuery && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 5 }}
+                    className="absolute top-full right-0 mt-4 w-80 glass rounded-2xl border border-black/5 shadow-2xl p-4 overflow-hidden"
+                  >
+                    {searchResults.length > 0 ? searchResults.map(n => (
+                      <button
+                        key={n.id}
+                        onClick={() => {
+                          handleSelectNode(n);
+                          setSearchQuery('');
+                        }}
+                        className="w-full text-left p-3 hover:bg-black/5 rounded-xl flex items-center gap-4 transition-all"
+                      >
+                        <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400">
+                          {n.type === 'folder' ? <Folder className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
+                        </div>
+                        <DualLabel 
+                          name={n.name} 
+                          className="text-sm font-bold truncate" 
+                          subClassName="text-[10px]" 
+                        />
+                      </button>
+                    )) : (
+                      <div className="p-4 text-center text-xs opacity-30">No results found</div>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         </div>
       </header>

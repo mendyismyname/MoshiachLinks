@@ -610,5 +610,3 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId
     </div>
   );
 };
-
-export default AdminPanel;
