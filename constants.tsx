@@ -122,7 +122,8 @@ export const INITIAL_DATA: Node[] = [
   // DOCX Files - These entries are placeholders. Their content will be populated
   // when the corresponding .docx files are uploaded via the Admin Panel.
   // The fileService will process the DOCX into HTML content.
-  // To display content from these files, please upload them through the Admin Panel.
+  // Direct seeding of local DOCX files into a browser-only app is not feasible due to browser security.
+  // Please use the Admin Panel's upload feature to process these files.
   { id: 'file-magilat-chanukah', name: 'Megilat Chanukah | מגילת חנוכה לע"ל', type: 'file', parentId: 'f-notes', content: '', contentType: 'text', createdAt: Date.now() - 140 },
   { id: 'file-vilachom-milchemet', name: 'And He Shall Wage the Wars of G-d | וילחום מלחמת ה\'', type: 'file', parentId: 'sf-rambam-11-h4', content: '', contentType: 'text', createdAt: Date.now() - 141 },
   { id: 'file-pib-reish-halacha-b', name: 'Chapter 12, Beginning of Halacha 2 | פי"ב ריש הלכה ב\'', type: 'file', parentId: 'sf-rambam-12-h2', content: '', contentType: 'text', createdAt: Date.now() - 142 },
@@ -273,7 +274,7 @@ export const INITIAL_DATA: Node[] = [
   { id: 'file-reshimat-sefarim', name: 'List of Books on Redemption | רשימת ספרים בעניני גאולה ומשיח', type: 'file', parentId: 'f-seforim', content: '', contentType: 'text', createdAt: Date.now() - 287 },
   { id: 'file-bitul-hayeitzer-hara', name: 'Abolition of Evil Inclination | ביטול היצר הרע לע"ל', type: 'file', parentId: 'f-concepts', content: '', contentType: 'text', createdAt: Date.now() - 288 },
   { id: 'file-lo-yeda-adam-eich-yihyu', name: 'No Man Knows How They Will Be | לא ידע אדם איך יהיו עד שיהיו', type: 'file', parentId: 'sf-rambam-12', content: '', contentType: 'text', createdAt: Date.now() - 289 },
-  { id: 'file-im-yomar-lecha-adam', name: 'If a Man Says to You, Buy a Field | אם יאמר לך אדם קח שדה שוה אלף דינרים בדינר אחד, לא תקח', type: 'file', parentId: 'sf-sages-quotes', content: '', contentType: 'text', createdAt: Date.now() - 290 },
+  { id: 'file-im-yomar-lecha-adam', name: 'If a Man Says to You, Buy a Field | אם יאמר לך אדם קח שדה שוה אלף דינרים בדיnר אחד, לא תקח', type: 'file', parentId: 'sf-sages-quotes', content: '', contentType: 'text', createdAt: Date.now() - 290 },
   { id: 'file-hiluk-peulot-eliyahu-moshiach-b', name: 'Difference in Actions of Elijah & Moshiach (B) | החילוק בין פעולות אליהו הנביא ומלך המשיח (ב)', type: 'file', parentId: 'sf-elijah', content: '', contentType: 'text', createdAt: Date.now() - 291 },
   { id: 'file-teshbi-yitaretz-kushiyot', name: 'Tishbi Will Resolve Difficulties | תשבי יתרץ קושיות ואבעיות', type: 'file', parentId: 'sf-elijah', content: '', contentType: 'text', createdAt: Date.now() - 292 },
   { id: 'file-im-david-hamelech-yachol-lihiyot-moshiach', name: 'Can King David Be Moshiach? | האם דוד המלך יכול להיות משיח?', type: 'file', parentId: 'f-notes', content: '', contentType: 'text', createdAt: Date.now() - 293 },

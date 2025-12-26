@@ -87,8 +87,8 @@ const ContentCard: React.FC<{ node: FileNode; onClick: () => void }> = ({ node, 
         <div className="mb-4">
           <DualLabel 
             name={node.name} 
-            className="text-xl font-serif text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-1" 
-            subClassName="text-xs line-clamp-1" 
+            className="text-xl font-serif text-gray-900 group-hover:text-blue-600 transition-colors" 
+            subClassName="text-xs" 
           />
         </div>
         <p className="text-sm text-gray-400 font-light line-clamp-2 leading-relaxed">
