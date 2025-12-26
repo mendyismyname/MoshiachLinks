@@ -1,34 +1,10 @@
-
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { storageService } from './services/storageService';
 import { fileService } from './services/fileService';
 import { Node, FileNode, FolderNode } from './types';
 import { TransitionWrapper } from './components/TransitionWrapper';
 import { AdminPanel } from './components/AdminPanel';
-import { 
-  Folder, 
-  FileText, 
-  Trash2, 
-  Play, 
-  UploadCloud, 
-  Link2, 
-  ArrowRight, 
-  Search, 
-  ChevronRight, 
-  PlayCircle,
-  ChevronDown,
-  ExternalLink,
-  Plus,
-  Video,
-  Menu as MenuIcon,
-  X,
-  Globe,
-  ArrowUpRight,
-  Library,
-  BookOpen,
-  MessageSquare,
-  Sparkles
-} from 'lucide-react';
+import { Folder, FileText, Trash2, Play, UploadCloud, Link2, ArrowRight, Search, ChevronRight, PlayCircle, ChevronDown, ExternalLink, Plus, Video, Menu as MenuIcon, X, Globe, ArrowUpRight, Library, BookOpen, MessageSquare, Sparkles } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 
 const getYouTubeId = (url: string) => {
@@ -50,9 +26,7 @@ const linkifyContent = (content: string) => {
 const DualLabel: React.FC<{ name: string; className?: string; subClassName?: string; invert?: boolean }> = ({ name, className = "", subClassName = "", invert = false }) => {
   const parts = name.split('|').map(s => s.trim());
   if (parts.length < 2) return <span dir="auto" className={className}>{name}</span>;
-  
   const [english, hebrew] = parts;
-  
   return (
     <div className={`flex flex-col ${invert ? 'items-end text-right' : 'items-start text-left'}`}>
       <span className={`leading-tight ${className}`}>{english}</span>
@@ -79,7 +53,9 @@ const ContentCard: React.FC<{ node: FileNode; onClick: () => void }> = ({ node, 
               src={`https://img.youtube.com/vi/${ytId}/maxresdefault.jpg`} 
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000"
               alt={node.name}
-              onError={(e) => { (e.target as HTMLImageElement).src = `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`; }}
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`;
+              }}
             />
             <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/10 backdrop-blur-[2px]">
               <PlayCircle className="w-14 h-14 text-white drop-shadow-2xl" />
@@ -87,8 +63,8 @@ const ContentCard: React.FC<{ node: FileNode; onClick: () => void }> = ({ node, 
           </div>
         ) : isLink ? (
           <div className="w-full h-full flex items-center justify-center bg-blue-50 text-blue-500 group-hover:bg-blue-600 group-hover:text-white transition-all duration-500">
-             <Globe className="w-16 h-16 opacity-30 group-hover:scale-110 transition-transform" />
-             <ArrowUpRight className="absolute top-6 right-6 w-6 h-6 opacity-40" />
+            <Globe className="w-16 h-16 opacity-30 group-hover:scale-110 transition-transform" />
+            <ArrowUpRight className="absolute top-6 right-6 w-6 h-6 opacity-40" />
           </div>
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gray-50 text-gray-200">
@@ -98,12 +74,16 @@ const ContentCard: React.FC<{ node: FileNode; onClick: () => void }> = ({ node, 
       </div>
       <div className="p-8">
         <div className="flex items-center gap-2 mb-4">
-           <span className="text-[9px] font-mono tracking-widest uppercase opacity-30 font-black px-2 py-0.5 border border-black/10 rounded">
-             {node.contentType}
-           </span>
+          <span className="text-[9px] font-mono tracking-widest uppercase opacity-30 font-black px-2 py-0.5 border border-black/10 rounded">
+            {node.contentType}
+          </span>
         </div>
         <div className="mb-4">
-          <DualLabel name={node.name} className="text-xl font-serif text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-1" subClassName="text-xs line-clamp-1" />
+          <DualLabel 
+            name={node.name} 
+            className="text-xl font-serif text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-1" 
+            subClassName="text-xs line-clamp-1" 
+          />
         </div>
         <p className="text-sm text-gray-400 font-light line-clamp-2 leading-relaxed">
           {node.content.replace(/<[^>]*>?/gm, '').slice(0, 100)}...
@@ -113,31 +93,32 @@ const ContentCard: React.FC<{ node: FileNode; onClick: () => void }> = ({ node, 
   );
 };
 
-const NavDropdown: React.FC<{ 
-  nodes: Node[]; 
-  parent: FolderNode; 
-  onSelect: (n: Node) => void;
-}> = ({ nodes, parent, onSelect }) => {
+const NavDropdown: React.FC<{ nodes: Node[]; parent: FolderNode; onSelect: (n: Node) => void; }> = ({ nodes, parent, onSelect }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const children = useMemo(() => nodes.filter(n => n.parentId === parent.id).sort((a,b) => b.createdAt - a.createdAt), [nodes, parent.id]);
-
+  const children = useMemo(() => 
+    nodes.filter(n => n.parentId === parent.id).sort((a,b) => b.createdAt - a.createdAt), 
+    [nodes, parent.id]
+  );
+  
   return (
-    <div 
-      className="relative h-full flex items-center"
-      onMouseEnter={() => setIsOpen(true)}
-      onMouseLeave={() => setIsOpen(false)}
-    >
+    <div className="relative h-full flex items-center" 
+         onMouseEnter={() => setIsOpen(true)} 
+         onMouseLeave={() => setIsOpen(false)}>
       <button 
         onClick={() => onSelect(parent)}
         className="px-3 py-2 hover:text-blue-600 transition-colors flex items-center gap-2 whitespace-nowrap group"
       >
-        <DualLabel name={parent.name} className="text-[13px] font-bold text-gray-600 group-hover:text-blue-600 truncate max-w-[120px] 2xl:max-w-[180px]" subClassName="text-[9px] font-bold opacity-20" />
+        <DualLabel 
+          name={parent.name} 
+          className="text-[13px] font-bold text-gray-600 group-hover:text-blue-600 truncate max-w-[120px] 2xl:max-w-[180px]" 
+          subClassName="text-[9px] font-bold opacity-20" 
+        />
         {children.length > 0 && <ChevronDown className={`w-3 h-3 opacity-30 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />}
       </button>
-
+      
       <AnimatePresence>
         {isOpen && children.length > 0 && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 10, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 5, scale: 0.98 }}
@@ -146,16 +127,30 @@ const NavDropdown: React.FC<{
           >
             <div className="w-80 bg-white rounded-2xl border border-black/5 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.15)] p-2 backdrop-blur-3xl overflow-hidden">
               {children.map(node => (
-                <button 
+                <button
                   key={node.id}
-                  onClick={() => { onSelect(node); setIsOpen(false); }}
+                  onClick={() => {
+                    onSelect(node);
+                    setIsOpen(false);
+                  }}
                   className="w-full text-left p-3 rounded-xl nav-dropdown-item flex items-center justify-between group"
                 >
                   <div className="flex items-center gap-3 truncate">
-                    <div className={`shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${node.type === 'folder' ? 'bg-blue-50 text-blue-500' : 'bg-emerald-50 text-emerald-500'}`}>
-                      {node.type === 'folder' ? <Folder className="w-4 h-4" /> : (node as FileNode).contentType === 'video' ? <Video className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
+                    <div className={`shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${
+                      node.type === 'folder' ? 'bg-blue-50 text-blue-500' : 'bg-emerald-50 text-emerald-500'
+                    }`}>
+                      {node.type === 'folder' ? 
+                        <Folder className="w-4 h-4" /> : 
+                        (node as FileNode).contentType === 'video' ? 
+                          <Video className="w-4 h-4" /> : 
+                          <FileText className="w-4 h-4" />
+                      }
                     </div>
-                    <DualLabel name={node.name} className="text-sm font-semibold text-gray-700 group-hover:text-blue-600 truncate" subClassName="text-[10px]" />
+                    <DualLabel 
+                      name={node.name} 
+                      className="text-sm font-semibold text-gray-700 group-hover:text-blue-600 truncate" 
+                      subClassName="text-[10px]" 
+                    />
                   </div>
                   {node.type === 'folder' && <ChevronRight className="w-3.5 h-3.5 opacity-20" />}
                 </button>
@@ -168,27 +163,30 @@ const NavDropdown: React.FC<{
   );
 };
 
-const MobileNavAccordion: React.FC<{ 
-  nodes: Node[]; 
-  parent: FolderNode; 
-  onSelect: (n: Node) => void;
-}> = ({ nodes, parent, onSelect }) => {
+const MobileNavAccordion: React.FC<{ nodes: Node[]; parent: FolderNode; onSelect: (n: Node) => void; }> = ({ nodes, parent, onSelect }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const children = useMemo(() => nodes.filter(n => n.parentId === parent.id).sort((a,b) => b.createdAt - a.createdAt), [nodes, parent.id]);
-
+  const children = useMemo(() => 
+    nodes.filter(n => n.parentId === parent.id).sort((a,b) => b.createdAt - a.createdAt), 
+    [nodes, parent.id]
+  );
+  
   return (
     <div className="border-b border-black/5 last:border-0">
       <button 
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center justify-between py-6 px-6 group"
       >
-        <DualLabel name={parent.name} className="text-lg font-serif font-bold text-gray-900 group-hover:text-blue-600" subClassName="text-xs" />
+        <DualLabel 
+          name={parent.name} 
+          className="text-lg font-serif font-bold text-gray-900 group-hover:text-blue-600" 
+          subClassName="text-xs" 
+        />
         {children.length > 0 && <ChevronDown className={`w-5 h-5 opacity-30 transition-transform ${isOpen ? 'rotate-180' : ''}`} />}
       </button>
       
       <AnimatePresence>
         {isOpen && children.length > 0 && (
-          <motion.div 
+          <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
@@ -199,18 +197,28 @@ const MobileNavAccordion: React.FC<{
                 onClick={() => onSelect(parent)}
                 className="w-full text-left py-3 px-4 rounded-xl text-sm font-bold text-blue-600 bg-blue-50 flex items-center gap-2"
               >
-                <Folder className="w-4 h-4" /> View Collection
+                <Folder className="w-4 h-4" />
+                View Collection
               </button>
               {children.map(node => (
-                <button 
+                <button
                   key={node.id}
                   onClick={() => onSelect(node)}
                   className="w-full text-left py-3 px-4 rounded-xl flex items-center gap-3 hover:bg-black/5"
                 >
                   <div className="shrink-0">
-                    {node.type === 'folder' ? <Folder className="w-4 h-4 opacity-40" /> : (node as FileNode).contentType === 'video' ? <Video className="w-4 h-4 opacity-40" /> : <FileText className="w-4 h-4 opacity-40" />}
+                    {node.type === 'folder' ? 
+                      <Folder className="w-4 h-4 opacity-40" /> : 
+                      (node as FileNode).contentType === 'video' ? 
+                        <Video className="w-4 h-4 opacity-40" /> : 
+                        <FileText className="w-4 h-4 opacity-40" />
+                    }
                   </div>
-                  <DualLabel name={node.name} className="text-sm font-medium text-gray-600 truncate" subClassName="text-[10px]" />
+                  <DualLabel 
+                    name={node.name} 
+                    className="text-sm font-medium text-gray-600 truncate" 
+                    subClassName="text-[10px]" 
+                  />
                 </button>
               ))}
             </div>
@@ -228,32 +236,43 @@ const App: React.FC = () => {
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-
-  useEffect(() => { refreshData(); }, []);
+  
+  useEffect(() => {
+    refreshData();
+  }, []);
+  
   const refreshData = () => setNodes(storageService.getNodes());
-
-  const topLevelFolders = useMemo(() => nodes.filter(n => n.type === 'folder' && !n.parentId) as FolderNode[], [nodes]);
-
+  
+  const topLevelFolders = useMemo(() => 
+    nodes.filter(n => n.type === 'folder' && !n.parentId) as FolderNode[], 
+    [nodes]
+  );
+  
   const searchResults = useMemo(() => {
     if (!searchQuery) return [];
     return nodes.filter(n => n.name.toLowerCase().includes(searchQuery.toLowerCase())).slice(0, 5);
   }, [nodes, searchQuery]);
-
+  
   const featuredVideos = useMemo(() => 
-    nodes.filter(n => n.type === 'file' && (n as FileNode).contentType === 'video').sort((a,b) => b.createdAt - a.createdAt).slice(0, 4) as FileNode[], 
+    nodes.filter(n => n.type === 'file' && (n as FileNode).contentType === 'video')
+         .sort((a,b) => b.createdAt - a.createdAt)
+         .slice(0, 4) as FileNode[], 
     [nodes]
   );
-
+  
   const breadcrumbs = useMemo(() => {
     const crumbs: Node[] = [];
     let curr = currentFolderId;
     while (curr) {
       const node = nodes.find(n => n.id === curr);
-      if (node) { crumbs.unshift(node); curr = node.parentId; } else break;
+      if (node) {
+        crumbs.unshift(node);
+        curr = node.parentId;
+      } else break;
     }
     return crumbs;
   }, [nodes, currentFolderId]);
-
+  
   const handleSelectNode = (n: Node) => {
     if (n.type === 'folder') {
       setCurrentFolderId(n.id);
@@ -264,9 +283,9 @@ const App: React.FC = () => {
     setIsMobileMenuOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
-
+  
   const getCleanName = (name: string) => name.split('|')[0].trim();
-
+  
   return (
     <div className="min-h-screen flex flex-col">
       <header className="fixed top-0 left-0 right-0 z-[160] glass h-24 flex items-center justify-between px-6 md:px-12">
@@ -278,12 +297,18 @@ const App: React.FC = () => {
           >
             <MenuIcon className="w-5 h-5" />
           </button>
-
-          <div className="flex flex-col cursor-pointer group" onClick={() => { setCurrentFolderId(null); setSelectedFile(null); }}>
+          
+          <div 
+            className="flex flex-col cursor-pointer group"
+            onClick={() => {
+              setCurrentFolderId(null);
+              setSelectedFile(null);
+            }}
+          >
             <span className="font-serif italic text-xl md:text-2xl font-black leading-none text-blue-700 tracking-tighter">Moshiach Links</span>
             <span className="hidden sm:block text-[9px] md:text-[10px] font-mono tracking-[0.2em] opacity-40 font-black mt-1 uppercase">Studies on Redemption</span>
           </div>
-
+          
           <nav className="hidden xl:flex items-center gap-1 h-full ml-4 2xl:ml-10 border-l border-black/5 pl-4 2xl:pl-10 overflow-hidden">
             {topLevelFolders.map(folder => (
               <NavDropdown 
@@ -295,28 +320,28 @@ const App: React.FC = () => {
             ))}
           </nav>
         </div>
-
+        
         <div className="flex items-center gap-3 md:gap-6">
           <div className="hidden lg:flex relative group w-[180px] xl:w-[240px]">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 opacity-30 group-focus-within:text-blue-600 group-focus-within:opacity-100 transition-all" />
-            <input 
-              type="text" 
-              placeholder="Search Archive..." 
+            <input
+              type="text"
+              placeholder="Search Archive..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-black/[0.03] rounded-full py-2 pl-11 pr-4 text-sm font-medium focus:outline-none focus:bg-white focus:ring-4 focus:ring-blue-600/5 border border-transparent focus:border-blue-600/10 transition-all"
             />
             <AnimatePresence>
               {searchQuery && (
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 5 }}
                   className="absolute top-full right-0 mt-4 w-80 glass rounded-2xl border border-black/5 shadow-2xl p-4 overflow-hidden"
                 >
                   {searchResults.length > 0 ? searchResults.map(n => (
-                    <button 
-                      key={n.id} 
+                    <button
+                      key={n.id}
                       onClick={() => {
                         handleSelectNode(n);
                         setSearchQuery('');
@@ -326,7 +351,11 @@ const App: React.FC = () => {
                       <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400">
                         {n.type === 'folder' ? <Folder className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
                       </div>
-                      <DualLabel name={n.name} className="text-sm font-bold truncate" subClassName="text-[10px]" />
+                      <DualLabel 
+                        name={n.name} 
+                        className="text-sm font-bold truncate" 
+                        subClassName="text-[10px]" 
+                      />
                     </button>
                   )) : (
                     <div className="p-4 text-center text-xs opacity-30">No results found</div>
@@ -335,25 +364,28 @@ const App: React.FC = () => {
               )}
             </AnimatePresence>
           </div>
-
-          <button onClick={() => setIsAdminOpen(true)} className="p-3 bg-blue-600 text-white rounded-full shadow-2xl shadow-blue-600/30 hover:scale-105 active:scale-95 transition-all">
+          
+          <button 
+            onClick={() => setIsAdminOpen(true)}
+            className="p-3 bg-blue-600 text-white rounded-full shadow-2xl shadow-blue-600/30 hover:scale-105 active:scale-95 transition-all"
+          >
             <UploadCloud className="w-5 h-5" />
           </button>
         </div>
       </header>
-
+      
       {/* Mobile Drawer */}
       <AnimatePresence>
         {isMobileMenuOpen && (
           <>
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsMobileMenuOpen(false)}
               className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[210]"
             />
-            <motion.div 
+            <motion.div
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
@@ -362,7 +394,10 @@ const App: React.FC = () => {
             >
               <div className="p-6 h-24 border-b border-black/5 flex items-center justify-between">
                 <span className="font-serif italic text-2xl font-black text-blue-700">Explore Archive</span>
-                <button onClick={() => setIsMobileMenuOpen(false)} className="p-2.5 bg-gray-100 rounded-full">
+                <button 
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="p-2.5 bg-gray-100 rounded-full"
+                >
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -378,49 +413,61 @@ const App: React.FC = () => {
               </div>
               <div className="p-6 border-t border-black/5 bg-gray-50">
                 <button 
-                  onClick={() => { setIsAdminOpen(true); setIsMobileMenuOpen(false); }}
+                  onClick={() => {
+                    setIsAdminOpen(true);
+                    setIsMobileMenuOpen(false);
+                  }}
                   className="w-full bg-black text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2"
                 >
-                  <UploadCloud className="w-5 h-5" /> Contribution Portal
+                  <UploadCloud className="w-5 h-5" />
+                  Contribution Portal
                 </button>
               </div>
             </motion.div>
           </>
         )}
       </AnimatePresence>
-
+      
       <main className="flex-1 pt-32 px-6 md:px-12">
         <AnimatePresence mode="wait">
           {selectedFile ? (
             <TransitionWrapper key={selectedFile.id}>
               <div className="max-w-4xl mx-auto py-16 md:py-24">
-                <button onClick={() => setSelectedFile(null)} className="flex items-center gap-2 text-blue-600 font-bold text-sm mb-12 hover:gap-3 transition-all group">
-                   <ChevronRight className="w-4 h-4 rotate-180 transition-transform group-hover:-translate-x-1" /> Back
+                <button 
+                  onClick={() => setSelectedFile(null)}
+                  className="flex items-center gap-2 text-blue-600 font-bold text-sm mb-12 hover:gap-3 transition-all group"
+                >
+                  <ChevronRight className="w-4 h-4 rotate-180 transition-transform group-hover:-translate-x-1" />
+                  Back
                 </button>
                 
                 <header className="mb-20">
                   <div className="flex items-center gap-4 mb-8">
-                     <span className="text-[10px] md:text-[12px] font-mono tracking-[0.4em] uppercase opacity-40 font-black px-4 py-1.5 bg-black/5 rounded-full">
-                       {selectedFile.contentType}
-                     </span>
-                     <span className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-pulse"></span>
+                    <span className="text-[10px] md:text-[12px] font-mono tracking-[0.4em] uppercase opacity-40 font-black px-4 py-1.5 bg-black/5 rounded-full">
+                      {selectedFile.contentType}
+                    </span>
+                    <span className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-pulse"></span>
                   </div>
                   <h1 className="text-5xl md:text-8xl font-serif tracking-tight text-gray-900 leading-[1.05] mb-10">
-                    <DualLabel name={selectedFile.name} className="text-5xl md:text-8xl" subClassName="text-xl md:text-3xl" />
+                    <DualLabel 
+                      name={selectedFile.name} 
+                      className="text-5xl md:text-8xl" 
+                      subClassName="text-xl md:text-3xl" 
+                    />
                   </h1>
                   <div className="h-px w-32 bg-blue-600/30"></div>
                 </header>
-
+                
                 {selectedFile.contentType === 'video' && getYouTubeId(selectedFile.url || '') && (
                   <div className="video-wrapper mb-20 rounded-[2.5rem] overflow-hidden shadow-[0_60px_120px_-20px_rgba(0,0,0,0.4)]">
                     <iframe 
                       src={`https://www.youtube.com/embed/${getYouTubeId(selectedFile.url || '')}?rel=0&modestbranding=1&hd=1`} 
                       allowFullScreen 
-                      title={selectedFile.name}
+                      title={selectedFile.name} 
                     />
                   </div>
                 )}
-
+                
                 {selectedFile.contentType === 'link' && selectedFile.url && (
                   <div className="mb-20 p-12 bg-blue-600 rounded-[2.5rem] text-white flex flex-col items-center text-center group transition-all hover:shadow-2xl shadow-blue-600/20">
                     <Globe className="w-16 h-16 mb-8 opacity-40 group-hover:scale-110 transition-transform" />
@@ -429,19 +476,21 @@ const App: React.FC = () => {
                     <a 
                       href={selectedFile.url} 
                       target="_blank" 
-                      rel="noopener noreferrer" 
+                      rel="noopener noreferrer"
                       className="px-10 py-4 bg-white text-blue-600 rounded-full font-bold flex items-center gap-2 hover:scale-105 active:scale-95 transition-all"
                     >
-                      Visit Site <ExternalLink className="w-4 h-4" />
+                      Visit Site
+                      <ExternalLink className="w-4 h-4" />
                     </a>
                   </div>
                 )}
-
+                
                 <article 
-                  className={`rich-text-content text-xl md:text-3xl font-light opacity-95 leading-relaxed max-w-none prose prose-2xl prose-blue 
-                    ${selectedFile.name.match(/[א-ת]/) ? 'font-serif' : 'font-sans'}`}
-                  dir="auto" 
-                  dangerouslySetInnerHTML={{ __html: linkifyContent(selectedFile.content) }} 
+                  className={`rich-text-content text-xl md:text-3xl font-light opacity-95 leading-relaxed max-w-none prose prose-2xl prose-blue ${
+                    selectedFile.name.match(/[א-ת]/) ? 'font-serif' : 'font-sans'
+                  }`}
+                  dir="auto"
+                  dangerouslySetInnerHTML={{ __html: linkifyContent(selectedFile.content) }}
                 />
               </div>
             </TransitionWrapper>
@@ -449,33 +498,59 @@ const App: React.FC = () => {
             <TransitionWrapper key={currentFolderId}>
               <div className="max-w-7xl mx-auto py-12">
                 <div className="flex items-center gap-3 text-[10px] font-mono tracking-widest uppercase opacity-30 font-black mb-8">
-                  <span onClick={() => setCurrentFolderId(null)} className="cursor-pointer hover:text-black">Home</span>
+                  <span 
+                    onClick={() => setCurrentFolderId(null)} 
+                    className="cursor-pointer hover:text-black"
+                  >
+                    Home
+                  </span>
                   {breadcrumbs.map(b => (
                     <React.Fragment key={b.id}>
                       <ChevronRight className="w-3 h-3" />
-                      <span onClick={() => setCurrentFolderId(b.id)} className="cursor-pointer hover:text-black">
+                      <span 
+                        onClick={() => setCurrentFolderId(b.id)} 
+                        className="cursor-pointer hover:text-black"
+                      >
                         {getCleanName(b.name)}
                       </span>
                     </React.Fragment>
                   ))}
                 </div>
+                
                 <h1 className="text-6xl md:text-9xl font-serif tracking-tighter text-gray-900 mb-20 leading-[0.9]">
-                  <DualLabel name={nodes.find(n => n.id === currentFolderId)?.name || ''} className="text-6xl md:text-9xl" subClassName="text-2xl md:text-4xl" />
+                  <DualLabel 
+                    name={nodes.find(n => n.id === currentFolderId)?.name || ''} 
+                    className="text-6xl md:text-9xl" 
+                    subClassName="text-2xl md:text-4xl" 
+                  />
                 </h1>
+                
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-12">
                   {nodes.filter(n => n.parentId === currentFolderId).map(node => (
                     node.type === 'folder' ? (
-                      <div key={node.id} onClick={() => setCurrentFolderId(node.id)} className="p-8 md:p-12 bg-white border border-black/5 rounded-[2.5rem] cursor-pointer hover:shadow-2xl hover:border-blue-500/10 transition-all flex items-center justify-between group">
+                      <div 
+                        key={node.id} 
+                        onClick={() => setCurrentFolderId(node.id)}
+                        className="p-8 md:p-12 bg-white border border-black/5 rounded-[2.5rem] cursor-pointer hover:shadow-2xl hover:border-blue-500/10 transition-all flex items-center justify-between group"
+                      >
                         <div className="flex items-center gap-6 md:gap-8 overflow-hidden">
                           <div className="shrink-0 w-14 h-14 md:w-16 md:h-16 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-500 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
                             <Folder className="w-7 h-7 md:w-8 md:h-8" />
                           </div>
-                          <DualLabel name={node.name} className="text-xl md:text-2xl font-serif truncate" subClassName="text-xs md:text-sm" />
+                          <DualLabel 
+                            name={node.name} 
+                            className="text-xl md:text-2xl font-serif truncate" 
+                            subClassName="text-xs md:text-sm" 
+                          />
                         </div>
                         <ChevronRight className="w-7 h-7 opacity-0 -translate-x-6 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-blue-500" />
                       </div>
                     ) : (
-                      <ContentCard key={node.id} node={node as FileNode} onClick={() => setSelectedFile(node as FileNode)} />
+                      <ContentCard 
+                        key={node.id} 
+                        node={node as FileNode} 
+                        onClick={() => setSelectedFile(node as FileNode)} 
+                      />
                     )
                   ))}
                 </div>
@@ -484,7 +559,7 @@ const App: React.FC = () => {
           ) : (
             <div key="homepage" className="space-y-32 md:space-y-64 pb-40">
               <section className="flex flex-col items-center justify-center text-center pt-24 pb-12 min-h-[85vh] relative overflow-hidden">
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 1.5, ease: [0.16, 1, 0.3, 1] }}
@@ -502,30 +577,38 @@ const App: React.FC = () => {
                   <h2 className="text-5xl md:text-[9rem] font-serif tracking-tighter leading-[0.85] text-blue-950 max-w-7xl drop-shadow-sm px-4">
                     Studies on <br/><span className="italic">Redemption.</span>
                   </h2>
-                  
                   <p className="text-xl md:text-4xl font-light text-gray-400 max-w-4xl leading-relaxed italic px-6 font-serif" dir="rtl">
                     עיונים, ביאורים ומקורות בעניני גאולה ומשיח
                   </p>
                 </motion.div>
                 
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 1, delay: 0.8 }}
                   className="mt-20 md:mt-24 flex flex-col md:flex-row items-center gap-6 md:gap-8"
                 >
-                   <button onClick={() => setCurrentFolderId(nodes.find(n => n.name.includes('Concepts'))?.id || null)} className="w-full md:w-auto px-12 py-5 bg-blue-600 text-white rounded-full font-bold text-sm tracking-[0.2em] uppercase hover:scale-105 active:scale-95 transition-all shadow-2xl shadow-blue-600/20">Begin Exploration</button>
-                   {featuredVideos.length > 0 && (
-                     <button onClick={() => setSelectedFile(featuredVideos[0])} className="w-full md:w-auto px-12 py-5 bg-white text-black border border-black/5 rounded-full font-bold text-sm tracking-[0.2em] uppercase hover:bg-gray-50 hover:shadow-xl transition-all flex items-center justify-center gap-3">
-                       <Play className="w-4 h-4 fill-current" /> Watch Latest
-                     </button>
-                   )}
+                  <button 
+                    onClick={() => setCurrentFolderId(nodes.find(n => n.name.includes('Concepts'))?.id || null)}
+                    className="w-full md:w-auto px-12 py-5 bg-blue-600 text-white rounded-full font-bold text-sm tracking-[0.2em] uppercase hover:scale-105 active:scale-95 transition-all shadow-2xl shadow-blue-600/20"
+                  >
+                    Begin Exploration
+                  </button>
+                  {featuredVideos.length > 0 && (
+                    <button 
+                      onClick={() => setSelectedFile(featuredVideos[0])}
+                      className="w-full md:w-auto px-12 py-5 bg-white text-black border border-black/5 rounded-full font-bold text-sm tracking-[0.2em] uppercase hover:bg-gray-50 hover:shadow-xl transition-all flex items-center justify-center gap-3"
+                    >
+                      <Play className="w-4 h-4 fill-current" />
+                      Watch Latest
+                    </button>
+                  )}
                 </motion.div>
               </section>
-
+              
               {/* Quick Links Grid Section */}
               <section className="max-w-[1900px] mx-auto px-6 md:px-12">
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, y: 40 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
@@ -534,6 +617,7 @@ const App: React.FC = () => {
                 >
                   <h5 className="text-[12px] font-mono uppercase tracking-[0.5em] opacity-40 font-black">Browse Archive by Section</h5>
                 </motion.div>
+                
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                   {topLevelFolders.map((folder, i) => (
                     <motion.div
@@ -547,26 +631,32 @@ const App: React.FC = () => {
                     >
                       <div className="space-y-6">
                         <div className="w-14 h-14 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
-                           {folder.name.includes('Library') ? <Library className="w-6 h-6" /> : 
-                            folder.name.includes('Multimedia') ? <PlayCircle className="w-6 h-6" /> : 
-                            folder.name.includes('Concepts') ? <Sparkles className="w-6 h-6" /> : 
-                            folder.name.includes('Belief') ? <BookOpen className="w-6 h-6" /> : <Folder className="w-6 h-6" />}
+                          {folder.name.includes('Library') ? <Library className="w-6 h-6" /> : 
+                           folder.name.includes('Multimedia') ? <PlayCircle className="w-6 h-6" /> : 
+                           folder.name.includes('Concepts') ? <Sparkles className="w-6 h-6" /> : 
+                           folder.name.includes('Belief') ? <BookOpen className="w-6 h-6" /> : 
+                           <Folder className="w-6 h-6" />}
                         </div>
                         <div className="space-y-2">
-                          <DualLabel name={folder.name} className="text-3xl font-serif text-gray-900 group-hover:text-blue-600 transition-colors leading-tight" subClassName="text-sm font-bold" />
+                          <DualLabel 
+                            name={folder.name} 
+                            className="text-3xl font-serif text-gray-900 group-hover:text-blue-600 transition-colors leading-tight" 
+                            subClassName="text-sm font-bold" 
+                          />
                         </div>
                       </div>
                       <div className="flex items-center gap-2 text-blue-600 font-bold text-xs tracking-widest uppercase opacity-0 group-hover:opacity-100 transition-all">
-                        Explore <ArrowRight className="w-3.5 h-3.5" />
+                        Explore
+                        <ArrowRight className="w-3.5 h-3.5" />
                       </div>
                     </motion.div>
                   ))}
                 </div>
               </section>
-
+              
               {/* Featured Video Series Section */}
               <section className="max-w-[1900px] mx-auto px-6 md:px-12">
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, y: 40 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
@@ -580,6 +670,7 @@ const App: React.FC = () => {
                     <h5 className="text-[12px] md:text-[14px] font-mono uppercase tracking-[0.3em] md:tracking-[0.5em] opacity-40 font-black">Featured Multimedia</h5>
                   </div>
                 </motion.div>
+                
                 {featuredVideos.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-12">
                     {featuredVideos.map((file, i) => (
@@ -590,7 +681,10 @@ const App: React.FC = () => {
                         viewport={{ once: true }}
                         transition={{ duration: 0.8, delay: i * 0.1 }}
                       >
-                        <ContentCard node={file} onClick={() => setSelectedFile(file)} />
+                        <ContentCard 
+                          node={file} 
+                          onClick={() => setSelectedFile(file)} 
+                        />
                       </motion.div>
                     ))}
                   </div>
@@ -600,41 +694,41 @@ const App: React.FC = () => {
                   </div>
                 )}
               </section>
-
+              
               {/* Highlighted Quote Section - Re-hierarchized */}
               <section className="max-w-7xl mx-auto px-4 py-12 md:py-24">
                 <div className="p-12 md:p-24 bg-white rounded-[3rem] md:rounded-[4rem] text-center border border-black/5 relative overflow-hidden shadow-2xl shadow-gray-200">
-                   <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-blue-500/[0.03] blur-[120px] rounded-full"></div>
-                   
-                   {/* English First and Larger */}
-                   <motion.p 
-                     initial={{ opacity: 0, y: 20 }}
-                     whileInView={{ opacity: 1, y: 0 }}
-                     viewport={{ once: true }}
-                     transition={{ duration: 1.5 }}
-                     className="text-2xl md:text-5xl lg:text-6xl font-serif max-w-5xl mx-auto text-gray-900 italic leading-[1.3] md:leading-[1.2] tracking-tight relative z-10" 
-                   >
-                     "In that era, there will be neither famine nor war, neither envy nor competition, for good will be plentiful and all delicacies available like dust..."
-                   </motion.p>
-                   
-                   {/* Hebrew Below and Smaller */}
-                   <motion.p 
-                     initial={{ opacity: 0 }}
-                     whileInView={{ opacity: 0.5 }}
-                     viewport={{ once: true }}
-                     transition={{ duration: 2, delay: 0.5 }}
-                     className="text-lg md:text-2xl font-serif text-gray-500 mt-10 md:mt-16 max-w-4xl mx-auto leading-relaxed italic"
-                     dir="rtl"
-                   >
-                     "באותה העת לא יהיה שם לא רעב ולא מלחמה, ולא קנאה ותחרות, שהטובה תהיה מושפעת הרבה וכל המעדנים מצויין כעפר..."
-                   </motion.p>
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-blue-500/[0.03] blur-[120px] rounded-full"></div>
+                  
+                  {/* English First and Larger */}
+                  <motion.p
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 1.5 }}
+                    className="text-2xl md:text-5xl lg:text-6xl font-serif max-w-5xl mx-auto text-gray-900 italic leading-[1.3] md:leading-[1.2] tracking-tight relative z-10"
+                  >
+                    "In that era, there will be neither famine nor war, neither envy nor competition, for good will be plentiful and all delicacies available like dust..."
+                  </motion.p>
+                  
+                  {/* Hebrew Below and Smaller */}
+                  <motion.p
+                    initial={{ opacity: 0 }}
+                    whileInView={{ opacity: 0.5 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 2, delay: 0.5 }}
+                    className="text-lg md:text-2xl font-serif text-gray-500 mt-10 md:mt-16 max-w-4xl mx-auto leading-relaxed italic"
+                    dir="rtl"
+                  >
+                    "באותה העת לא יהיה שם לא רעב ולא מלחמה, ולא קנאה ותחרות, שהטובה תהיה מושפעת הרבה וכל המעדנים מצויין כעפר..."
+                  </motion.p>
                 </div>
               </section>
             </div>
           )}
         </AnimatePresence>
       </main>
-
+      
       <footer className="mt-20 bg-[#111111] py-24 md:py-40 px-6 md:px-12 text-white/90">
         <div className="max-w-[1900px] mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 md:gap-24">
@@ -650,7 +744,7 @@ const App: React.FC = () => {
                 <span className="text-[10px] md:text-[11px] font-mono uppercase tracking-[0.4em] font-black opacity-20">© 2025 Moshiach Links | בס"ד</span>
               </div>
             </div>
-
+            
             <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-16 md:gap-20">
               <div className="space-y-8 md:space-y-10">
                 <h5 className="text-[10px] md:text-[11px] font-mono uppercase tracking-[0.4em] md:tracking-[0.5em] font-black text-blue-500">אתרים מומלצים</h5>
@@ -663,7 +757,7 @@ const App: React.FC = () => {
                   <li><a href="#" className="hover:text-blue-400 transition-colors">רבי דרייב - ספרים ושיעורים</a></li>
                 </ul>
               </div>
-
+              
               <div className="space-y-8 md:space-y-10">
                 <h5 className="text-[10px] md:text-[11px] font-mono uppercase tracking-[0.4em] md:tracking-[0.5em] font-black text-blue-500">ביאורי רמב"ם</h5>
                 <ul className="space-y-4 md:space-y-5 text-base font-medium text-white/50" dir="rtl">
@@ -677,7 +771,7 @@ const App: React.FC = () => {
                   </li>
                 </ul>
               </div>
-
+              
               <div className="space-y-8 md:space-y-10">
                 <h5 className="text-[10px] md:text-[11px] font-mono uppercase tracking-[0.4em] md:tracking-[0.5em] font-black text-blue-500">English Library</h5>
                 <ul className="space-y-4 md:space-y-5 text-base font-medium text-white/50">
@@ -689,7 +783,7 @@ const App: React.FC = () => {
               </div>
             </div>
           </div>
-
+          
           <div className="mt-20 md:mt-40 pt-16 md:pt-24 border-t border-white/5">
             <h5 className="text-[10px] md:text-[11px] font-mono uppercase tracking-[0.4em] md:tracking-[0.5em] font-black text-white/10 mb-16 md:mb-20 text-center">רשימת ספרים נבחרים</h5>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-x-12 gap-y-10 text-sm font-light text-white/30" dir="rtl">
@@ -700,7 +794,7 @@ const App: React.FC = () => {
           </div>
         </div>
       </footer>
-
+      
       <AnimatePresence>
         {isAdminOpen && <AdminPanel onClose={() => setIsAdminOpen(false)} currentFolderId={currentFolderId} onRefresh={refreshData} />}
       </AnimatePresence>

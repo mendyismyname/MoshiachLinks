@@ -1,18 +1,17 @@
-
 import { storageService } from './storageService';
 // @ts-ignore
-import mammoth from 'https://esm.sh/mammoth';
+import * as mammoth from 'mammoth';
 
 export const fileService = {
   processFile: async (file: File, parentId: string | null): Promise<void> => {
     const fileName = file.name.replace(/\.[^/.]+$/, "");
     let contentHtml = '';
     let contentType: 'text' | 'video' | 'link' = 'text';
-
+    
     try {
       if (file.name.endsWith('.docx')) {
         const arrayBuffer = await file.arrayBuffer();
-        const result = await mammoth.convertToHtml({
+        const result = await mammoth.convertToHtml({ 
           arrayBuffer,
           styleMap: [
             "p[style-name='Heading 1'] => h1:fresh",
@@ -39,7 +38,7 @@ export const fileService = {
       } else {
         throw new Error("Unsupported format");
       }
-
+      
       storageService.addNode({
         name: fileName,
         type: 'file',
