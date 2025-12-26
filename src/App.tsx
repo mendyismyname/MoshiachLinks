@@ -476,6 +476,7 @@ const App: React.FC = () => {
                   />
                 ))}
               </div>
+              {/* Admin Portal button removed from here */}
             </motion.div>
           </>
         )}
@@ -917,7 +918,7 @@ const App: React.FC = () => {
                   <li><a href="https://chabad.org" target="_blank" className="hover:text-blue-400 transition-colors">Chabad: Moshiach 101</a></li>
                   <li><a href="https://learnmoshiach.com" target="_blank" className="hover:text-blue-400 transition-colors">LearnMoshiach.com</a></li>
                   <li><a href="#" className="hover:text-blue-400 transition-colors italic">Living with Moshiach</a></li>
-                  {/* Removed Admin Portal button from footer */}
+                  {/* Admin Portal button removed from footer */}
                 </ul>
               </div>
             </div>
