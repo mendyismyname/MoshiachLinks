@@ -33,7 +33,7 @@ const DualLabel: React.FC<{ name: string; className?: string; subClassName?: str
     <div className={`flex flex-col ${invert ? 'items-end text-right' : 'items-start text-left'}`}>
       <span className={`leading-tight ${className}`}>{english}</span>
       <span 
-        className={`opacity-80 leading-tight mt-0.5 ${subClassName} whitespace-normal font-sans ${invert ? 'text-right' : ''} break-words`} 
+        className={`leading-tight mt-0.5 ${subClassName} whitespace-normal font-sans ${invert ? 'text-right' : ''} break-words`} 
         dir="rtl"
       >
         {hebrew}
@@ -89,7 +89,7 @@ const ContentCard: React.FC<{ node: FileNode; onClick: () => void }> = ({ node, 
           <DualLabel 
             name={node.name} 
             className="text-xl font-serif text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-1" 
-            subClassName="text-xs" 
+            subClassName="text-[10px] opacity-60" 
           />
         </div>
         <p className="text-sm text-gray-400 font-light line-clamp-2 leading-relaxed">
@@ -113,12 +113,12 @@ const NavDropdown: React.FC<{ nodes: Node[]; parent: FolderNode; onSelect: (n: N
          onMouseLeave={() => setIsOpen(false)}>
       <button 
         onClick={() => onSelect(parent)}
-        className="px-4 py-3 hover:text-blue-600 transition-colors flex items-center gap-3 whitespace-nowrap group h-full"
+        className="px-4 py-4 hover:text-blue-600 transition-colors flex items-center gap-3 whitespace-nowrap group h-full"
       >
         <DualLabel 
           name={parent.name} 
           className="text-sm font-bold text-gray-700 group-hover:text-blue-600 truncate max-w-[140px] 2xl:max-w-[180px]" 
-          subClassName="text-[10px] font-bold opacity-40" 
+          subClassName="text-[10px] opacity-60" 
         />
         {children.length > 0 && <ChevronDown className={`w-4 h-4 opacity-40 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />}
       </button>
@@ -156,7 +156,7 @@ const NavDropdown: React.FC<{ nodes: Node[]; parent: FolderNode; onSelect: (n: N
                     <DualLabel 
                       name={node.name} 
                       className="text-sm font-semibold text-gray-700 group-hover:text-blue-600 truncate" 
-                      subClassName="text-[10px]" 
+                      subClassName="text-[10px] opacity-60" 
                     />
                   </div>
                   {node.type === 'folder' && <ChevronRight className="w-3.5 h-3.5 opacity-20" />}
@@ -186,7 +186,7 @@ const MobileNavAccordion: React.FC<{ nodes: Node[]; parent: FolderNode; onSelect
         <DualLabel 
           name={parent.name} 
           className="text-lg font-serif font-bold text-gray-900 group-hover:text-blue-600" 
-          subClassName="text-xs" 
+          subClassName="text-xs opacity-60" 
         />
         {children.length > 0 && <ChevronDown className={`w-5 h-5 opacity-30 transition-transform ${isOpen ? 'rotate-180' : ''}`} />}
       </button>
@@ -224,7 +224,7 @@ const MobileNavAccordion: React.FC<{ nodes: Node[]; parent: FolderNode; onSelect
                   <DualLabel 
                     name={node.name} 
                     className="text-sm font-medium text-gray-600" 
-                    subClassName="text-[10px]" 
+                    subClassName="text-[10px] opacity-60" 
                   />
                 </button>
               ))}
@@ -433,7 +433,7 @@ const App: React.FC = () => {
                         <DualLabel 
                           name={n.name} 
                           className="text-sm font-bold truncate" 
-                          subClassName="text-[10px]" 
+                          subClassName="text-[10px] opacity-60" 
                         />
                       </button>
                     )) : (
@@ -639,7 +639,7 @@ const App: React.FC = () => {
                           <DualLabel 
                             name={node.name} 
                             className="text-xl md:text-2xl font-serif truncate" 
-                            subClassName="text-xs md:text-sm" 
+                            subClassName="text-xs md:text-sm opacity-60" 
                           />
                         </div>
                         <ChevronRight className="w-7 h-7 opacity-0 -translate-x-6 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-blue-500" />
@@ -786,7 +786,7 @@ const App: React.FC = () => {
                           <DualLabel 
                             name={folder.name} 
                             className="text-3xl font-serif text-gray-900 group-hover:text-blue-600 transition-colors leading-tight" 
-                            subClassName="text-sm font-bold" 
+                            subClassName="text-sm font-bold opacity-60" 
                           />
                         </div>
                       </div>
