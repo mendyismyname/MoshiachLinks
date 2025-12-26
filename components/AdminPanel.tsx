@@ -2,51 +2,30 @@ import React, { useState, useRef, useEffect } from 'react';
 import { storageService } from '../services/storageService';
 import { fileService } from '../services/fileService';
 import { Node, NodeType, FolderNode, FileNode } from '../types';
-import { 
-  X, 
-  FolderPlus, 
-  FilePlus, 
-  AlertCircle, 
-  Save, 
-  Trash2, 
-  Edit3, 
-  Upload, 
-  Plus, 
-  Folder, 
-  FileText, 
-  Video, 
-  Link, 
-  Move,
-  ChevronRight,
-  ChevronDown,
-  Home,
-  ArrowUp,
-  ArrowDown
-} from 'lucide-react';
+import { X, FolderPlus, FilePlus, AlertCircle, Save, Trash2, Edit3, Upload, Plus, Folder, FileText, Video, Link } from 'lucide-react';
 
 interface AdminPanelProps {
   onClose: () => void;
+  currentFolderId: string | null;
   onRefresh: () => void;
 }
 
-const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, onRefresh }) => {
-  const [nodes, setNodes] = useState<Node[]>(storageService.getNodes());
+export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId, onRefresh }) => {
+  const [nodes, setNodes] = useState<Node[]>([]);
   const [isAdding, setIsAdding] = useState<NodeType | 'content' | null>(null);
   const [name, setName] = useState('');
   const [url, setUrl] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [editingNode, setEditingNode] = useState<Node | null>(null);
   const [content, setContent] = useState('');
-  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
-  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
-  const [draggedNode, setDraggedNode] = useState<Node | null>(null);
-  const [dragOverFolder, setDragOverFolder] = useState<string | null>(null);
-  
   const editorRef = useRef<HTMLDivElement>(null);
+  const [dragActive, setDragActive] = useState(false);
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(currentFolderId);
 
   useEffect(() => {
     setNodes(storageService.getNodes());
-  }, []);
+    setSelectedFolderId(currentFolderId);
+  }, [currentFolderId]);
 
   const handlePaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
@@ -56,6 +35,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, onRefresh }) => {
 
   const handleFileDrop = async (e: React.DragEvent) => {
     e.preventDefault();
+    setDragActive(false);
     setError(null);
     
     const files = Array.from(e.dataTransfer.files) as File[];
@@ -82,33 +62,35 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, onRefresh }) => {
       setError("Name is required");
       return;
     }
-    
+
     try {
       if (isAdding === 'folder') {
-        storageService.addNode({ 
-          name, 
-          type: 'folder', 
-          parentId: selectedFolderId 
+        storageService.addNode({
+          name,
+          type: 'folder',
+          parentId: selectedFolderId
         });
       } else if (isAdding === 'file') {
         const isYouTube = url.includes('youtube.com') || url.includes('youtu.be');
         const contentType = url ? (isYouTube ? 'video' : 'link') : 'text';
         
-        storageService.addNode({ 
-          name, 
-          type: 'file', 
+        storageService.addNode({
+          name,
+          type: 'file',
           parentId: selectedFolderId,
-          content: content || '', 
-          contentType, 
+          content: content || '',
+          contentType,
           url: url || undefined,
         });
-      } else if (isAdding === 'content' && editingNode) {
+      } else if (isAdding === 'content') {
         // Update existing content
-        storageService.updateNode(editingNode.id, { 
-          name, 
-          content, 
-          url: url || undefined 
-        });
+        if (editingNode && editingNode.type === 'file') {
+          storageService.updateNode(editingNode.id, {
+            name,
+            content,
+            url: url || undefined
+          });
+        }
       }
       
       setName('');
@@ -129,7 +111,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, onRefresh }) => {
     setContent(node.type === 'file' ? node.content : '');
     setUrl(node.type === 'file' && node.url ? node.url : '');
     setIsAdding('content');
-    setSelectedFolderId(node.parentId);
   };
 
   const handleDelete = (id: string) => {
@@ -163,442 +144,225 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, onRefresh }) => {
     }
   };
 
-  const toggleFolder = (folderId: string) => {
-    setExpandedFolders(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(folderId)) {
-        newSet.delete(folderId);
-      } else {
-        newSet.add(folderId);
-      }
-      return newSet;
-    });
-  };
-
-  const moveNode = (nodeId: string, newParentId: string | null) => {
-    storageService.updateNode(nodeId, { parentId: newParentId });
-    onRefresh();
-    setNodes(storageService.getNodes());
-  };
-
-  const handleDragStart = (e: React.DragEvent, node: Node) => {
-    setDraggedNode(node);
-    e.dataTransfer.effectAllowed = 'move';
-  };
-
-  const handleDragOver = (e: React.DragEvent, folderId: string | null) => {
-    e.preventDefault();
-    setDragOverFolder(folderId);
-  };
-
-  const handleDragLeave = () => {
-    setDragOverFolder(null);
-  };
-
-  const handleDrop = (e: React.DragEvent, targetFolderId: string | null) => {
-    e.preventDefault();
-    setDragOverFolder(null);
-    
-    if (draggedNode) {
-      // Prevent dropping a folder into itself or its children
-      if (draggedNode.type === 'folder') {
-        const isChild = (parentId: string | null): boolean => {
-          if (!parentId) return false;
-          if (parentId === draggedNode.id) return true;
-          const parent = nodes.find(n => n.id === parentId);
-          return parent ? isChild(parent.parentId) : false;
-        };
-        
-        if (isChild(targetFolderId)) {
-          setError("Cannot move folder into itself or its subfolders");
-          setDraggedNode(null);
-          return;
-        }
-      }
-      
-      moveNode(draggedNode.id, targetFolderId);
-    }
-    
-    setDraggedNode(null);
-  };
-
-  const renderFolderTree = (parentId: string | null, depth: number = 0) => {
-    const folders = nodes
-      .filter(n => n.type === 'folder' && n.parentId === parentId)
-      .sort((a, b) => a.name.localeCompare(b.name)) as FolderNode[];
-      
-    const files = nodes
-      .filter(n => n.type === 'file' && n.parentId === parentId)
-      .sort((a, b) => a.name.localeCompare(b.name)) as FileNode[];
-
-    return (
-      <div className="ml-4">
-        {folders.map(folder => (
-          <div key={folder.id} className="mb-1">
-            <div 
-              className={`flex items-center p-2 rounded-lg cursor-pointer hover:bg-gray-100 ${
-                selectedFolderId === folder.id ? 'bg-blue-50 border border-blue-200' : ''
-              } ${dragOverFolder === folder.id ? 'bg-blue-100 border border-blue-300' : ''}`}
-              onClick={() => setSelectedFolderId(folder.id)}
-              onDragOver={(e) => handleDragOver(e, folder.id)}
-              onDragLeave={handleDragLeave}
-              onDrop={(e) => handleDrop(e, folder.id)}
-              draggable
-              onDragStart={(e) => handleDragStart(e, folder)}
-            >
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleFolder(folder.id);
-                }}
-                className="mr-1 p-1 rounded hover:bg-gray-200"
-              >
-                {expandedFolders.has(folder.id) ? 
-                  <ChevronDown className="w-4 h-4" /> : 
-                  <ChevronRight className="w-4 h-4" />
-                }
-              </button>
-              
-              <Folder className="w-5 h-5 text-blue-500 mr-2" />
-              <span className="flex-1 truncate">{folder.name.split('|')[0].trim()}</span>
-              
-              <div className="flex gap-1 opacity-0 group-hover:opacity-100">
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleEdit(folder);
-                  }}
-                  className="p-1 text-gray-500 hover:text-blue-600"
-                >
-                  <Edit3 className="w-4 h-4" />
-                </button>
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDelete(folder.id);
-                  }}
-                  className="p-1 text-gray-500 hover:text-red-600"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-            
-            {expandedFolders.has(folder.id) && (
-              <div className="ml-4 border-l-2 border-gray-200 pl-2 py-1">
-                {renderFolderTree(folder.id, depth + 1)}
-              </div>
-            )}
-          </div>
-        ))}
-        
-        {files.map(file => (
-          <div 
-            key={file.id}
-            className={`flex items-center p-2 rounded-lg mb-1 hover:bg-gray-100 ${
-              dragOverFolder === file.id ? 'bg-blue-100 border border-blue-300' : ''
-            }`}
-            draggable
-            onDragStart={(e) => handleDragStart(e, file)}
-          >
-            <div className="w-6"></div>
-            {file.contentType === 'video' ? 
-              <Video className="w-5 h-5 text-emerald-500 mr-2" /> : 
-              file.contentType === 'link' ? 
-                <Link className="w-5 h-5 text-purple-500 mr-2" /> : 
-                <FileText className="w-5 h-5 text-gray-500 mr-2" />
-            }
-            <span className="flex-1 truncate">{file.name.split('|')[0].trim()}</span>
-            
-            <div className="flex gap-1 opacity-0 group-hover:opacity-100">
-              <button 
-                onClick={() => handleEdit(file)}
-                className="p-1 text-gray-500 hover:text-blue-600"
-              >
-                <Edit3 className="w-4 h-4" />
-              </button>
-              <button 
-                onClick={() => handleDelete(file.id)}
-                className="p-1 text-gray-500 hover:text-red-600"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  };
+  const folders = nodes.filter(n => n.type === 'folder') as FolderNode[];
+  const files = nodes.filter(n => n.type === 'file') as FileNode[];
 
   return (
-    <div className="fixed inset-0 z-[200] bg-gray-50 flex flex-col">
-      <div className="flex items-center justify-between p-4 bg-white border-b border-gray-200">
-        <h2 className="text-xl font-bold text-gray-800">Admin Dashboard</h2>
-        <button 
-          onClick={onClose}
-          className="p-2 rounded-full hover:bg-gray-100"
-        >
-          <X className="w-5 h-5" />
-        </button>
-      </div>
-      
-      <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar - Folder Tree */}
-        <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
-          <div className="p-4 border-b border-gray-200">
-            <h3 className="font-semibold text-gray-700 mb-2">Content Structure</h3>
-            <div 
-              className={`p-3 rounded-lg cursor-pointer hover:bg-gray-100 ${
-                selectedFolderId === null ? 'bg-blue-50 border border-blue-200' : ''
-              } ${dragOverFolder === null ? 'bg-blue-100 border border-blue-300' : ''}`}
-              onClick={() => setSelectedFolderId(null)}
-              onDragOver={(e) => handleDragOver(e, null)}
-              onDragLeave={handleDragLeave}
-              onDrop={(e) => handleDrop(e, null)}
-            >
-              <div className="flex items-center">
-                <Home className="w-5 h-5 text-gray-500 mr-2" />
-                <span>Root</span>
-              </div>
-            </div>
-          </div>
-          
-          <div className="flex-1 overflow-y-auto p-4">
-            {renderFolderTree(null)}
-          </div>
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-md p-4">
+      <div 
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragActive(true);
+        }} 
+        onDragLeave={() => setDragActive(false)}
+        onDrop={handleFileDrop}
+        className={`w-full max-w-6xl bg-white border border-black/10 rounded-[3rem] overflow-hidden shadow-2xl transition-all ${dragActive ? 'scale-[1.02] border-blue-500 bg-blue-50/30' : ''}`}
+      >
+        <div className="flex items-center justify-between p-8 border-b border-black/5 bg-gray-50/50">
+          <h2 className="text-2xl font-serif text-gray-900">Admin Portal</h2>
+          <button 
+            onClick={onClose}
+            className="p-3 hover:bg-black/5 rounded-full transition-colors text-gray-400"
+          >
+            <X className="w-6 h-6" />
+          </button>
         </div>
         
-        {/* Main Content Area */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="p-6 bg-white border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-800">
-                  {selectedFolderId 
-                    ? nodes.find(n => n.id === selectedFolderId)?.name.split('|')[0].trim() || 'Selected Folder' 
-                    : 'Root Directory'}
-                </h3>
-                <p className="text-sm text-gray-500">
-                  {selectedFolderId ? 'Managing contents of selected folder' : 'Managing root contents'}
-                </p>
-              </div>
-              
-              <div className="flex gap-2">
+        <div className="p-10 max-h-[80vh] overflow-y-auto no-scrollbar">
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-2xl flex items-center gap-3 text-sm border border-red-100">
+              <AlertCircle className="w-4 h-4" />
+              {error}
+            </div>
+          )}
+          
+          {!isAdding ? (
+            <div className="space-y-10">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <button 
                   onClick={() => setIsAdding('folder')}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  className="flex flex-col items-center justify-center p-8 bg-gray-50 hover:bg-white hover:shadow-xl border border-dashed border-gray-200 rounded-[2.5rem] transition-all group"
                 >
-                  <FolderPlus className="w-4 h-4" />
-                  New Folder
+                  <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                    <FolderPlus className="w-8 h-8" />
+                  </div>
+                  <span className="font-serif text-xl">New Collection</span>
                 </button>
+                
                 <button 
                   onClick={() => setIsAdding('file')}
-                  className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+                  className="flex flex-col items-center justify-center p-8 bg-gray-50 hover:bg-white hover:shadow-xl border border-dashed border-gray-200 rounded-[2.5rem] transition-all group"
                 >
-                  <FilePlus className="w-4 h-4" />
-                  New Entry
+                  <div className="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                    <FilePlus className="w-8 h-8" />
+                  </div>
+                  <span className="font-serif text-xl">New Entry</span>
                 </button>
-              </div>
-            </div>
-          </div>
-          
-          <div className="flex-1 overflow-y-auto p-6">
-            {error && (
-              <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-lg flex items-center gap-3">
-                <AlertCircle className="w-5 h-5" />
-                {error}
-              </div>
-            )}
-            
-            {!isAdding ? (
-              <div className="space-y-6">
-                <div 
-                  className="border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center hover:border-blue-400 transition-colors"
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    e.dataTransfer.dropEffect = 'copy';
-                  }}
-                  onDrop={handleFileDrop}
-                >
-                  <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-700 mb-2">Upload DOCX Files</h3>
-                  <p className="text-gray-500 mb-4">Drag and drop files here or click to browse</p>
-                  <label className="px-4 py-2 bg-blue-600 text-white rounded-lg cursor-pointer hover:bg-blue-700 transition-colors">
-                    Choose Files
+                
+                <div className="flex flex-col items-center justify-center p-8 bg-gray-50 border border-dashed border-gray-200 rounded-[2.5rem]">
+                  <div className="w-16 h-16 bg-purple-50 rounded-2xl flex items-center justify-center mb-6">
+                    <Upload className="w-8 h-8 text-purple-500" />
+                  </div>
+                  <span className="font-serif text-xl mb-4">Upload DOCX</span>
+                  <label className="px-6 py-3 bg-purple-600 text-white rounded-full font-bold text-sm cursor-pointer hover:bg-purple-700 transition-colors">
+                    Choose File
                     <input 
                       type="file" 
                       accept=".docx" 
-                      onChange={handleFileUpload} 
-                      className="hidden" 
+                      onChange={handleFileUpload}
+                      className="hidden"
                     />
                   </label>
                 </div>
+              </div>
+              
+              <div className="border-t border-black/5 pt-10">
+                <h3 className="text-xl font-serif mb-6">Content Structure</h3>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {nodes
-                    .filter(n => n.parentId === selectedFolderId)
-                    .sort((a, b) => {
-                      if (a.type === b.type) return a.name.localeCompare(b.name);
-                      return a.type === 'folder' ? -1 : 1;
-                    })
-                    .map(node => (
-                      <div 
-                        key={node.id} 
-                        className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow group"
-                        draggable
-                        onDragStart={(e) => handleDragStart(e, node)}
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-start">
-                            {node.type === 'folder' ? (
-                              <Folder className="w-6 h-6 text-blue-500 mt-0.5 mr-3" />
-                            ) : (node as FileNode).contentType === 'video' ? (
-                              <Video className="w-6 h-6 text-emerald-500 mt-0.5 mr-3" />
-                            ) : (node as FileNode).contentType === 'link' ? (
-                              <Link className="w-6 h-6 text-purple-500 mt-0.5 mr-3" />
-                            ) : (
-                              <FileText className="w-6 h-6 text-gray-500 mt-0.5 mr-3" />
-                            )}
-                            <div>
-                              <h4 className="font-medium text-gray-900">{node.name.split('|')[0].trim()}</h4>
-                              <p className="text-sm text-gray-500 mt-1 line-clamp-2">
-                                {node.type === 'file' 
-                                  ? (node as FileNode).content.replace(/<[^>]*>?/gm, '').slice(0, 80) + '...' 
-                                  : 'Folder'}
-                              </p>
-                            </div>
-                          </div>
-                          
-                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button 
-                              onClick={() => handleEdit(node)}
-                              className="p-1 text-gray-500 hover:text-blue-600"
-                            >
-                              <Edit3 className="w-4 h-4" />
-                            </button>
-                            <button 
-                              onClick={() => handleDelete(node.id)}
-                              className="p-1 text-gray-500 hover:text-red-600"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-                        
-                        <div className="mt-4 flex justify-between items-center">
-                          <span className="text-xs font-medium px-2 py-1 bg-gray-100 text-gray-600 rounded">
-                            {node.type === 'folder' ? 'Folder' : (node as FileNode).contentType}
-                          </span>
-                          <span className="text-xs text-gray-500">
-                            {new Date(node.createdAt).toLocaleDateString()}
-                          </span>
-                        </div>
-                      </div>
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Select Parent Folder</label>
+                  <select
+                    value={selectedFolderId || ''}
+                    onChange={(e) => setSelectedFolderId(e.target.value || null)}
+                    className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-3 focus:outline-none focus:bg-white focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all"
+                  >
+                    <option value="">Root (No Parent)</option>
+                    {folders.map(folder => (
+                      <option key={folder.id} value={folder.id}>
+                        {folder.name.split('|')[0].trim()}
+                      </option>
                     ))}
+                  </select>
                 </div>
                 
-                {nodes.filter(n => n.parentId === selectedFolderId).length === 0 && (
-                  <div className="text-center py-12">
-                    <Folder className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-700 mb-2">This folder is empty</h3>
-                    <p className="text-gray-500 mb-4">Add content by creating new entries or uploading files</p>
-                    <div className="flex justify-center gap-3">
-                      <button 
-                        onClick={() => setIsAdding('folder')}
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                      >
-                        <FolderPlus className="w-4 h-4" />
-                        New Folder
-                      </button>
-                      <button 
-                        onClick={() => setIsAdding('file')}
-                        className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
-                      >
-                        <FilePlus className="w-4 h-4" />
-                        New Entry
-                      </button>
+                <div className="space-y-4 max-h-96 overflow-y-auto">
+                  {folders.filter(f => f.parentId === selectedFolderId).map(folder => (
+                    <div key={folder.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl">
+                      <div className="flex items-center gap-4">
+                        <Folder className="w-6 h-6 text-blue-500" />
+                        <div>
+                          <div className="font-medium">{folder.name.split('|')[0].trim()}</div>
+                          <div className="text-sm text-gray-500">{folder.name.split('|')[1]?.trim() || ''}</div>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => handleEdit(folder)}
+                          className="p-2 hover:bg-black/5 rounded-full transition-colors"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(folder.id)}
+                          className="p-2 hover:bg-red-50 text-red-500 rounded-full transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  ))}
+                  
+                  {files.filter(f => f.parentId === selectedFolderId).map(file => (
+                    <div key={file.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl">
+                      <div className="flex items-center gap-4">
+                        {file.contentType === 'video' ? 
+                          <Video className="w-6 h-6 text-emerald-500" /> : 
+                          file.contentType === 'link' ? 
+                            <Link className="w-6 h-6 text-purple-500" /> : 
+                            <FileText className="w-6 h-6 text-gray-500" />
+                        }
+                        <div>
+                          <div className="font-medium">{file.name.split('|')[0].trim()}</div>
+                          <div className="text-sm text-gray-500">{file.name.split('|')[1]?.trim() || ''}</div>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => handleEdit(file)}
+                          className="p-2 hover:bg-black/5 rounded-full transition-colors"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(file.id)}
+                          className="p-2 hover:bg-red-50 text-red-500 rounded-full transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-            ) : (
-              <div className="max-w-3xl mx-auto bg-white rounded-xl border border-gray-200 p-6">
-                <h3 className="text-xl font-bold text-gray-800 mb-6">
-                  {editingNode ? 'Edit Content' : isAdding === 'folder' ? 'Create New Folder' : 'Create New Entry'}
-                </h3>
-                
-                <div className="space-y-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
-                    <input
-                      autoFocus
-                      type="text"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Enter name..."
+            </div>
+          ) : (
+            <div className="space-y-8">
+              <div className="space-y-3">
+                <label className="text-[10px] font-mono uppercase tracking-[0.2em] text-gray-400 font-bold">Document Title</label>
+                <input 
+                  autoFocus 
+                  type="text" 
+                  value={name} 
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-5 focus:outline-none focus:bg-white focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all text-2xl font-serif"
+                  placeholder="Title..."
+                />
+              </div>
+              
+              {isAdding === 'file' && (
+                <>
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-mono uppercase tracking-[0.2em] text-gray-400 font-bold">Primary Reference (URL)</label>
+                    <input 
+                      type="text" 
+                      value={url} 
+                      onChange={(e) => setUrl(e.target.value)}
+                      className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 focus:outline-none focus:bg-white focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all font-mono text-sm"
+                      placeholder="https://..."
                     />
                   </div>
                   
-                  {isAdding === 'file' && (
-                    <>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">URL (Optional)</label>
-                        <input
-                          type="text"
-                          value={url}
-                          onChange={(e) => setUrl(e.target.value)}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="https://example.com"
-                        />
-                        <p className="mt-1 text-sm text-gray-500">Leave blank for text content, add YouTube link for videos</p>
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Content</label>
-                        <div 
-                          ref={editorRef}
-                          contentEditable
-                          onPaste={handlePaste}
-                          className="w-full min-h-[200px] px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 overflow-y-auto"
-                          dangerouslySetInnerHTML={{ __html: content }}
-                          onInput={(e) => setContent(e.currentTarget.innerHTML)}
-                        />
-                        <p className="mt-1 text-sm text-gray-500">Paste formatted text or type content here</p>
-                      </div>
-                    </>
-                  )}
-                  
-                  <div className="flex gap-3 pt-4">
-                    <button
-                      onClick={handleAdd}
-                      className="flex-1 bg-blue-600 text-white font-medium py-2.5 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
-                    >
-                      <Save className="w-4 h-4" />
-                      {editingNode ? 'Update' : 'Save'} Content
-                    </button>
-                    <button
-                      onClick={() => {
-                        setIsAdding(null);
-                        setEditingNode(null);
-                        setError(null);
-                        setName('');
-                        setUrl('');
-                        setContent('');
-                      }}
-                      className="px-6 py-2.5 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors"
-                    >
-                      Cancel
-                    </button>
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-mono uppercase tracking-[0.2em] text-gray-400 font-bold">Content Narrative</label>
+                    <div 
+                      ref={editorRef}
+                      contentEditable
+                      onPaste={handlePaste}
+                      className="w-full min-h-[350px] bg-gray-50 border border-gray-100 rounded-[2rem] px-8 py-8 focus:outline-none focus:bg-white focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all rich-text-content overflow-y-auto text-gray-800 text-lg font-light leading-relaxed"
+                      dangerouslySetInnerHTML={{ __html: content }}
+                      onInput={(e) => setContent(e.currentTarget.innerHTML)}
+                    />
                   </div>
-                </div>
+                </>
+              )}
+              
+              <div className="flex gap-4 pt-4">
+                <button 
+                  onClick={handleAdd}
+                  className="flex-[2] bg-black text-white font-bold py-5 rounded-2xl hover:opacity-90 active:scale-95 transition-all shadow-xl flex items-center justify-center gap-2"
+                >
+                  <Save className="w-5 h-5" />
+                  {editingNode ? 'Update' : 'Save'} Content
+                </button>
+                
+                <button 
+                  onClick={() => {
+                    setIsAdding(null);
+                    setEditingNode(null);
+                    setError(null);
+                    setName('');
+                    setUrl('');
+                    setContent('');
+                  }}
+                  className="flex-1 bg-gray-100 text-gray-600 font-bold py-5 rounded-2xl hover:bg-gray-200 transition-all"
+                >
+                  Cancel
+                </button>
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 };
-
-export default AdminPanel;
