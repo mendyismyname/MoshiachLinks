@@ -31,7 +31,7 @@ interface AdminPanelProps {
 }
 
 export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId: initialFolderId, onRefresh }) => {
-  const [nodes, setNodes] = useState<Node[]>(storageService.getNodes());
+  const [nodes, setNodes] = useState<Node[]>([]);
   const [isAdding, setIsAdding] = useState<NodeType | 'content' | null>(null);
   const [name, setName] = useState('');
   const [url, setUrl] = useState('');
@@ -46,16 +46,20 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId
   const editorRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setNodes(storageService.getNodes());
-    // Initialize expanded folders to include the initialFolderId and its ancestors
-    const initialExpanded = new Set<string>();
-    let current = initialFolderId;
-    while (current) {
-      initialExpanded.add(current);
-      const parent = storageService.getNodes().find(n => n.id === current)?.parentId; // Use storageService.getNodes() here
-      current = parent;
-    }
-    setExpandedFolders(initialExpanded);
+    const fetchNodes = async () => {
+      const fetchedNodes = await storageService.getNodes();
+      setNodes(fetchedNodes);
+      // Initialize expanded folders to include the initialFolderId and its ancestors
+      const initialExpanded = new Set<string>();
+      let current = initialFolderId;
+      while (current) {
+        initialExpanded.add(current);
+        const parent = fetchedNodes.find(n => n.id === current)?.parentId;
+        current = parent;
+      }
+      setExpandedFolders(initialExpanded);
+    };
+    fetchNodes();
   }, [initialFolderId]); // Depend only on initialFolderId to avoid re-running on every nodes change
 
   const handlePaste = (e: React.ClipboardEvent) => {
@@ -75,9 +79,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId
       setIsAdding('file');
       
       try {
-        const newNode = await fileService.processFile(file, selectedFolderId); // fileService.processFile now returns the new node
+        await fileService.processFile(file, selectedFolderId); // fileService.processFile now returns the new node
         onRefresh();
-        setNodes(storageService.getNodes());
+        setNodes(await storageService.getNodes()); // Re-fetch nodes after upload
         setName('');
         setUrl('');
         setIsAdding(null);
@@ -87,7 +91,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId
     }
   };
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!name) {
       setError("Name is required");
       return;
@@ -95,7 +99,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId
     
     try {
       if (isAdding === 'folder') {
-        storageService.addNode({ 
+        await storageService.addNode({ 
           name, 
           type: 'folder', 
           parentId: selectedFolderId 
@@ -104,7 +108,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId
         const isYouTube = url.includes('youtube.com') || url.includes('youtu.be');
         const contentType = url ? (isYouTube ? 'video' : 'link') : 'text';
         
-        storageService.addNode({ 
+        await storageService.addNode({ 
           name, 
           type: 'file', 
           parentId: selectedFolderId,
@@ -114,7 +118,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId
         });
       } else if (isAdding === 'content' && editingNode) {
         // Update existing content
-        storageService.updateNode(editingNode.id, { 
+        await storageService.updateNode(editingNode.id, { 
           name, 
           content, 
           url: url || undefined 
@@ -127,7 +131,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId
       setIsAdding(null);
       setEditingNode(null);
       onRefresh();
-      setNodes(storageService.getNodes());
+      setNodes(await storageService.getNodes()); // Re-fetch nodes after add/update
     } catch (err) {
       setError("Error saving content.");
     }
@@ -142,11 +146,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId
     setSelectedFolderId(node.parentId); // Set selected folder to parent of edited node
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (window.confirm("Are you sure you want to delete this item and all its contents?")) {
-      storageService.deleteNode(id);
-      onRefresh();
-      setNodes(storageService.getNodes());
+      try {
+        await storageService.deleteNode(id);
+        onRefresh();
+        setNodes(await storageService.getNodes()); // Re-fetch nodes after delete
+      } catch (err) {
+        setError("Error deleting content.");
+      }
     }
   };
 
@@ -161,9 +169,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId
       setIsAdding('file');
       
       try {
-        const newNode = await fileService.processFile(file, selectedFolderId); // fileService.processFile now returns the new node
+        await fileService.processFile(file, selectedFolderId); // fileService.processFile now returns the new node
         onRefresh();
-        setNodes(storageService.getNodes());
+        setNodes(await storageService.getNodes()); // Re-fetch nodes after upload
         setName('');
         setUrl('');
         setIsAdding(null);
@@ -185,10 +193,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId
     });
   };
 
-  const moveNode = (nodeId: string, newParentId: string | null) => {
-    storageService.updateNode(nodeId, { parentId: newParentId });
-    onRefresh();
-    setNodes(storageService.getNodes());
+  const moveNode = async (nodeId: string, newParentId: string | null) => {
+    try {
+      await storageService.updateNode(nodeId, { parentId: newParentId });
+      onRefresh();
+      setNodes(await storageService.getNodes()); // Re-fetch nodes after move
+    } catch (err) {
+      setError("Error moving node.");
+    }
   };
 
   const handleDragStart = (e: React.DragEvent, node: Node) => {
@@ -205,7 +217,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId
     setDragOverFolder(null);
   };
 
-  const handleDrop = (e: React.DragEvent, targetFolderId: string | null) => {
+  const handleDrop = async (e: React.DragEvent, targetFolderId: string | null) => {
     e.preventDefault();
     setDragOverFolder(null);
     
@@ -226,7 +238,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId
         }
       }
       
-      moveNode(draggedNode.id, targetFolderId);
+      await moveNode(draggedNode.id, targetFolderId);
     }
     
     setDraggedNode(null);
@@ -481,13 +493,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId
                           
                           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             <button 
-                              onClick={() => handleEdit(node)}
+                              onClick={(e) => { e.stopPropagation(); handleEdit(node); }}
                               className="p-1 text-gray-500 hover:text-blue-600"
                             >
                               <Edit3 className="w-4 h-4" />
                             </button>
                             <button 
-                              onClick={() => handleDelete(node.id)}
+                              onClick={(e) => { e.stopPropagation(); handleDelete(node.id); }}
                               className="p-1 text-gray-500 hover:text-red-600"
                             >
                               <Trash2 className="w-4 h-4" />

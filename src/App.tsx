@@ -87,8 +87,8 @@ const ContentCard: React.FC<{ node: FileNode; onClick: () => void }> = ({ node, 
         <div className="mb-4">
           <DualLabel 
             name={node.name} 
-            className="text-xl font-serif text-gray-900 group-hover:text-blue-600 transition-colors" 
-            subClassName="text-xs" 
+            className="text-xl font-serif text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-1" 
+            subClassName="text-xs line-clamp-1" 
           />
         </div>
         <p className="text-sm text-gray-400 font-light line-clamp-2 leading-relaxed">
@@ -248,15 +248,19 @@ const App: React.FC = () => {
   const [adminError, setAdminError] = useState<string | null>(null);
   
   useEffect(() => {
-    const loadData = () => {
-      const storedNodes = storageService.getNodes();
+    const loadData = async () => {
+      setIsLoading(true);
+      const storedNodes = await storageService.getNodes(); // Fetch from Supabase
       setNodes(storedNodes);
-      setIsLoading(false); // Set loading to false after data is loaded
+      setIsLoading(false);
     };
     loadData();
   }, []);
   
-  const refreshData = () => setNodes(storageService.getNodes());
+  const refreshData = async () => {
+    const updatedNodes = await storageService.getNodes();
+    setNodes(updatedNodes);
+  };
   
   const topLevelFolders = useMemo(() => 
     nodes.filter(n => n.type === 'folder' && !n.parentId) as FolderNode[], 
@@ -270,7 +274,7 @@ const App: React.FC = () => {
   
   const featuredVideos = useMemo(() => 
     nodes.filter(n => n.type === 'file' && (n as FileNode).contentType === 'video')
-         .sort((a,b) => b.createdAt - a.createdAt)
+         .sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) // Sort by createdAt timestamp
          .slice(0, 5) as FileNode[], 
     [nodes]
   );

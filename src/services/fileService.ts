@@ -1,4 +1,4 @@
-import { storageService } from './storageService';
+import { supabase } from '../integrations/supabase/client';
 // @ts-ignore
 import * as mammoth from 'mammoth';
 import { FileNode } from '../types';
@@ -8,7 +8,8 @@ export const fileService = {
     const fileName = file.name.replace(/\.[^/.]+$/, "");
     let contentHtml = '';
     let contentType: 'text' | 'video' | 'link' = 'text';
-    
+    let url: string | undefined = undefined; // DOCX files are text, no URL initially
+
     try {
       if (file.name.endsWith('.docx')) {
         const arrayBuffer = await file.arrayBuffer();
@@ -40,16 +41,32 @@ export const fileService = {
         throw new Error("Unsupported format");
       }
       
-      const newNode = storageService.addNode({
-        name: fileName,
-        type: 'file',
-        parentId,
-        content: contentHtml,
-        contentType,
-      }) as FileNode; // Cast to FileNode as we know it's a file
-      return newNode;
+      const { data, error } = await supabase
+        .from('documents')
+        .insert([
+          {
+            name: fileName,
+            type: 'file',
+            parentId: parentId,
+            content: contentHtml,
+            contentType: 'text', // DOCX is always text content
+            url: url,
+            createdAt: new Date().toISOString(),
+          },
+        ])
+        .select();
+
+      if (error) {
+        throw error;
+      }
+
+      if (!data || data.length === 0) {
+        throw new Error("Failed to insert document into Supabase.");
+      }
+
+      return data[0] as FileNode; // Return the newly created node
     } catch (err) {
-      console.error("File processing error:", err);
+      console.error("File processing or Supabase upload error:", err);
       throw err;
     }
   }
