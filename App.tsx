@@ -106,14 +106,14 @@ const NavDropdown: React.FC<{ nodes: Node[]; parent: FolderNode; onSelect: (n: N
          onMouseLeave={() => setIsOpen(false)}>
       <button 
         onClick={() => onSelect(parent)}
-        className="px-3 py-2 hover:text-blue-600 transition-colors flex items-center gap-2 whitespace-nowrap group"
+        className="px-4 py-3 hover:text-blue-600 transition-colors flex items-center gap-3 whitespace-nowrap group h-full"
       >
         <DualLabel 
           name={parent.name} 
-          className="text-[13px] font-bold text-gray-600 group-hover:text-blue-600 truncate max-w-[120px] 2xl:max-w-[180px]" 
-          subClassName="text-[9px] font-bold opacity-20" 
+          className="text-sm font-bold text-gray-700 group-hover:text-blue-600 truncate max-w-[140px] 2xl:max-w-[180px]" 
+          subClassName="text-[10px] font-bold opacity-40" 
         />
-        {children.length > 0 && <ChevronDown className={`w-3 h-3 opacity-30 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />}
+        {children.length > 0 && <ChevronDown className={`w-4 h-4 opacity-40 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />}
       </button>
       
       <AnimatePresence>
@@ -309,7 +309,7 @@ const App: React.FC = () => {
             <span className="hidden sm:block text-[9px] md:text-[10px] font-mono tracking-[0.2em] opacity-40 font-black mt-1 uppercase">Studies on Redemption</span>
           </div>
           
-          <nav className="hidden xl:flex items-center gap-1 h-full ml-4 2xl:ml-10 border-l border-black/5 pl-4 2xl:pl-10 overflow-hidden">
+          <nav className="hidden xl:flex items-center gap-0 h-full ml-4 2xl:ml-10 border-l border-black/5 pl-4 2xl:pl-10 overflow-hidden">
             {topLevelFolders.map(folder => (
               <NavDropdown 
                 key={folder.id} 
@@ -487,9 +487,9 @@ const App: React.FC = () => {
                 
                 <article 
                   className={`rich-text-content text-xl md:text-3xl font-light opacity-95 leading-relaxed max-w-none prose prose-2xl prose-blue ${
-                    selectedFile.name.match(/[א-ת]/) ? 'font-serif' : 'font-sans'
+                    selectedFile.name.match(/[א-ת]/) ? 'font-serif text-right' : 'font-sans'
                   }`}
-                  dir="auto"
+                  dir={selectedFile.name.match(/[א-ת]/) ? "rtl" : "ltr"}
                   dangerouslySetInnerHTML={{ __html: linkifyContent(selectedFile.content) }}
                 />
               </div>
@@ -717,7 +717,7 @@ const App: React.FC = () => {
                     whileInView={{ opacity: 0.5 }}
                     viewport={{ once: true }}
                     transition={{ duration: 2, delay: 0.5 }}
-                    className="text-lg md:text-2xl font-serif text-gray-500 mt-10 md:mt-16 max-w-4xl mx-auto leading-relaxed italic"
+                    className="text-lg md:text-2xl font-serif text-gray-500 mt-10 md:mt-16 max-w-4xl mx-auto leading-relaxed italic text-right"
                     dir="rtl"
                   >
                     "באותה העת לא יהיה שם לא רעב ולא מלחמה, ולא קנאה ותחרות, שהטובה תהיה מושפעת הרבה וכל המעדנים מצויין כעפר..."
