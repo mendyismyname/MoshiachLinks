@@ -1,7 +1,6 @@
 import { supabase } from '../integrations/supabase/client';
 // @ts-ignore
 import * as mammoth from 'mammoth';
-import { FileNode } from '../types';
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
@@ -42,11 +41,8 @@ async function translateTextWithGemini(text: string): Promise<string> {
 }
 
 export const fileService = {
-  processFile: async (file: File, parentId: string | null): Promise<FileNode> => {
-    const fileName = file.name.replace(/\.[^/.]+$/, "");
+  processFileContent: async (file: File): Promise<{ contentHtml: string; translatedContent: string }> => {
     let contentHtml = '';
-    let contentType: 'text' | 'video' | 'link' = 'text';
-    let url: string | undefined = undefined;
     let translatedContent = '';
 
     try {
@@ -88,33 +84,10 @@ export const fileService = {
         throw new Error("Unsupported format");
       }
       
-      const { data, error } = await supabase
-        .from('documents')
-        .insert([
-          {
-            name: fileName,
-            type: 'file',
-            parentId: parentId,
-            content: contentHtml,
-            translated_content: translatedContent, // Store translated content
-            contentType: 'text', 
-            url: url,
-            createdAt: new Date().toISOString(),
-          },
-        ])
-        .select();
+      return { contentHtml, translatedContent };
 
-      if (error) {
-        throw error;
-      }
-
-      if (!data || data.length === 0) {
-        throw new Error("Failed to insert document into Supabase.");
-      }
-
-      return data[0] as FileNode; 
     } catch (err) {
-      console.error("File processing or Supabase upload error:", err);
+      console.error("File processing or translation error:", err);
       throw err;
     }
   }

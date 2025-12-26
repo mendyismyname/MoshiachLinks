@@ -26,32 +26,33 @@ import {
 
 interface AdminPanelProps {
   onClose: () => void;
-  currentFolderId: string | null; // This prop is now used for initial state, not controlled
+  currentFolderId: string | null; 
   onRefresh: () => void;
+  editingNode?: Node | null; // Added for editing existing nodes
 }
 
-export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId: initialFolderId, onRefresh }) => {
+export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId: initialFolderId, onRefresh, editingNode: propEditingNode }) => {
   const [nodes, setNodes] = useState<Node[]>([]);
   const [isAdding, setIsAdding] = useState<NodeType | 'content' | null>(null);
   const [name, setName] = useState('');
   const [url, setUrl] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [editingNode, setEditingNode] = useState<Node | null>(null);
+  const [editingNode, setEditingNode] = useState<Node | null>(propEditingNode || null); // Use prop for initial editing node
   const [content, setContent] = useState('');
-  const [translatedContent, setTranslatedContent] = useState(''); // New state for translated content
+  const [translatedContent, setTranslatedContent] = useState(''); 
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(initialFolderId);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [draggedNode, setDraggedNode] = useState<Node | null>(null);
   const [dragOverFolder, setDragOverFolder] = useState<string | null>(null);
-  
+  const [isProcessingFile, setIsProcessingFile] = useState(false); // New state for file processing
+
   const editorRef = useRef<HTMLDivElement>(null);
-  const translatedEditorRef = useRef<HTMLDivElement>(null); // Ref for translated content editor
+  const translatedEditorRef = useRef<HTMLDivElement>(null); 
 
   useEffect(() => {
     const fetchNodes = async () => {
       const fetchedNodes = await storageService.getNodes();
       setNodes(fetchedNodes);
-      // Initialize expanded folders to include the initialFolderId and its ancestors
       const initialExpanded = new Set<string>();
       let current = initialFolderId;
       while (current) {
@@ -62,7 +63,29 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId
       setExpandedFolders(initialExpanded);
     };
     fetchNodes();
-  }, [initialFolderId]); // Depend only on initialFolderId to avoid re-running on every nodes change
+  }, [initialFolderId]); 
+
+  // Effect to handle propEditingNode changes
+  useEffect(() => {
+    if (propEditingNode) {
+      setEditingNode(propEditingNode);
+      setName(propEditingNode.name);
+      setContent(propEditingNode.type === 'file' ? propEditingNode.content : '');
+      setTranslatedContent(propEditingNode.type === 'file' ? (propEditingNode as FileNode).translatedContent || '' : '');
+      setUrl(propEditingNode.type === 'file' && propEditingNode.url ? propEditingNode.url : '');
+      setIsAdding('content'); // Set to content editing mode
+      setSelectedFolderId(propEditingNode.parentId);
+    } else {
+      setEditingNode(null);
+      setIsAdding(null);
+      setName('');
+      setUrl('');
+      setContent('');
+      setTranslatedContent('');
+      setError(null);
+    }
+  }, [propEditingNode]);
+
 
   const handlePaste = (e: React.ClipboardEvent, targetEditor: 'original' | 'translated') => {
     e.preventDefault();
@@ -75,28 +98,64 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId
     }
   };
 
+  const processAndSaveFile = async (file: File, targetNodeId: string | null) => {
+    setError(null);
+    setIsProcessingFile(true);
+    try {
+      const { contentHtml, translatedContent: newTranslatedContent } = await fileService.processFileContent(file);
+      
+      const nodeName = file.name.replace(/\.[^/.]+$/, "");
+
+      if (targetNodeId && editingNode && editingNode.id === targetNodeId) {
+        // Update existing node
+        await storageService.updateNode(targetNodeId, {
+          name: nodeName,
+          content: contentHtml,
+          translatedContent: newTranslatedContent,
+          contentType: 'text', // Assuming DOCX are text content
+          url: undefined, // Clear URL if a DOCX is uploaded
+        });
+      } else {
+        // Add new node
+        await storageService.addNode({ 
+          name: nodeName, 
+          type: 'file', 
+          parentId: selectedFolderId,
+          content: contentHtml, 
+          translatedContent: newTranslatedContent,
+          contentType: 'text', 
+        });
+      }
+      
+      onRefresh();
+      setNodes(await storageService.getNodes()); 
+      setName('');
+      setUrl('');
+      setContent('');
+      setTranslatedContent('');
+      setIsAdding(null);
+      setEditingNode(null);
+    } catch (err) {
+      console.error("File processing or Supabase upload error:", err);
+      setError("Error processing document: " + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setIsProcessingFile(false);
+    }
+  };
+
   const handleFileDrop = async (e: React.DragEvent) => {
     e.preventDefault();
-    setError(null);
-    
     const files = Array.from(e.dataTransfer.files) as File[];
     if (files.length > 0) {
-      const file = files[0];
-      setName(file.name.replace(/\.[^/.]+$/, ""));
-      setIsAdding('file');
-      
-      try {
-        await fileService.processFile(file, selectedFolderId); 
-        onRefresh();
-        setNodes(await storageService.getNodes()); 
-        setName('');
-        setUrl('');
-        setContent('');
-        setTranslatedContent('');
-        setIsAdding(null);
-      } catch (err) {
-        setError("Error processing document.");
-      }
+      await processAndSaveFile(files[0], editingNode?.id || null);
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      await processAndSaveFile(files[0], editingNode?.id || null);
     }
   };
 
@@ -122,16 +181,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId
           type: 'file', 
           parentId: selectedFolderId,
           content: content || '', 
-          translatedContent: translatedContent || '', // Include translated content
+          translatedContent: translatedContent || '', 
           contentType, 
           url: url || undefined,
         });
       } else if (isAdding === 'content' && editingNode) {
-        // Update existing content
         await storageService.updateNode(editingNode.id, { 
           name, 
           content, 
-          translatedContent, // Update translated content
+          translatedContent, 
           url: url || undefined 
         });
       }
@@ -145,7 +203,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId
       onRefresh();
       setNodes(await storageService.getNodes()); 
     } catch (err) {
-      setError("Error saving content.");
+      setError("Error saving content: " + (err instanceof Error ? err.message : String(err)));
     }
   };
 
@@ -153,7 +211,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId
     setEditingNode(node);
     setName(node.name);
     setContent(node.type === 'file' ? node.content : '');
-    setTranslatedContent(node.type === 'file' ? (node as FileNode).translatedContent || '' : ''); // Set translated content for editing
+    setTranslatedContent(node.type === 'file' ? (node as FileNode).translatedContent || '' : '');
     setUrl(node.type === 'file' && node.url ? node.url : '');
     setIsAdding('content');
     setSelectedFolderId(node.parentId); 
@@ -166,32 +224,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId
         onRefresh();
         setNodes(await storageService.getNodes()); 
       } catch (err) {
-        setError("Error deleting content.");
-      }
-    }
-  };
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    e.preventDefault();
-    setError(null);
-    
-    const files = e.target.files;
-    if (files && files.length > 0) {
-      const file = files[0];
-      setName(file.name.replace(/\.[^/.]+$/, ""));
-      setIsAdding('file');
-      
-      try {
-        await fileService.processFile(file, selectedFolderId); 
-        onRefresh();
-        setNodes(await storageService.getNodes()); 
-        setName('');
-        setUrl('');
-        setContent('');
-        setTranslatedContent('');
-        setIsAdding(null);
-      } catch (err) {
-        setError("Error processing document.");
+        setError("Error deleting content: " + (err instanceof Error ? err.message : String(err)));
       }
     }
   };
@@ -214,7 +247,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId
       onRefresh();
       setNodes(await storageService.getNodes()); 
     } catch (err) {
-      setError("Error moving node.");
+      setError("Error moving node: " + (err instanceof Error ? err.message : String(err)));
     }
   };
 
@@ -450,18 +483,27 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId
                   }}
                   onDrop={handleFileDrop}
                 >
-                  <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-700 mb-2">Upload DOCX Files</h3>
-                  <p className="text-gray-500 mb-4">Drag and drop files here or click to browse</p>
-                  <label className="px-4 py-2 bg-blue-600 text-white rounded-lg cursor-pointer hover:bg-blue-700 transition-colors">
-                    Choose Files
-                    <input 
-                      type="file" 
-                      accept=".docx" 
-                      onChange={handleFileUpload} 
-                      className="hidden" 
-                    />
-                  </label>
+                  {isProcessingFile ? (
+                    <div className="flex flex-col items-center justify-center">
+                      <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mb-4"></div>
+                      <p className="text-blue-600 font-medium">Processing and translating file...</p>
+                    </div>
+                  ) : (
+                    <>
+                      <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-700 mb-2">Upload DOCX Files</h3>
+                      <p className="text-gray-500 mb-4">Drag and drop files here or click to browse</p>
+                      <label className="px-4 py-2 bg-blue-600 text-white rounded-lg cursor-pointer hover:bg-blue-700 transition-colors">
+                        Choose Files
+                        <input 
+                          type="file" 
+                          accept=".docx" 
+                          onChange={handleFileUpload} 
+                          className="hidden" 
+                        />
+                      </label>
+                    </>
+                  )}
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -584,6 +626,37 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, currentFolderId
                         <p className="mt-1 text-sm text-gray-500">Leave blank for text content, add YouTube link for videos</p>
                       </div>
                       
+                      <div 
+                        className="border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center hover:border-blue-400 transition-colors"
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          e.dataTransfer.dropEffect = 'copy';
+                        }}
+                        onDrop={handleFileDrop}
+                      >
+                        {isProcessingFile ? (
+                          <div className="flex flex-col items-center justify-center">
+                            <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mb-4"></div>
+                            <p className="text-blue-600 font-medium">Processing and translating file...</p>
+                          </div>
+                        ) : (
+                          <>
+                            <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                            <h3 className="text-lg font-medium text-gray-700 mb-2">Upload DOCX File to Update/Create</h3>
+                            <p className="text-gray-500 mb-4">Drag and drop files here or click to browse</p>
+                            <label className="px-4 py-2 bg-blue-600 text-white rounded-lg cursor-pointer hover:bg-blue-700 transition-colors">
+                              Choose File
+                              <input 
+                                type="file" 
+                                accept=".docx" 
+                                onChange={handleFileUpload} 
+                                className="hidden" 
+                              />
+                            </label>
+                          </>
+                        )}
+                      </div>
+
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Original Content</label>
                         <div 

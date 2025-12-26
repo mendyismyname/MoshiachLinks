@@ -4,7 +4,7 @@ import { fileService } from './services/fileService';
 import { Node, FileNode, FolderNode } from './types';
 import { TransitionWrapper } from './components/TransitionWrapper';
 import { AdminPanel } from './components/AdminPanel';
-import { Folder, FileText, Play, Link2, ArrowRight, Search, ChevronRight, PlayCircle, ChevronDown, ExternalLink, Plus, Video, Menu as MenuIcon, X, Globe, ArrowUpRight, Library, BookOpen, MessageSquare, Sparkles, Settings, AlertCircle, Upload } from 'lucide-react';
+import { Folder, FileText, Play, Link2, ArrowRight, Search, ChevronRight, PlayCircle, ChevronDown, ExternalLink, Plus, Video, Menu as MenuIcon, X, Globe, ArrowUpRight, Library, BookOpen, MessageSquare, Sparkles, Settings, AlertCircle, Upload, Edit3 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 
 const getYouTubeId = (url: string) => {
@@ -248,7 +248,7 @@ const App: React.FC = () => {
   const [adminError, setAdminError] = useState<string | null>(null);
   const [isUploadingFile, setIsUploadingFile] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const [showTranslatedContent, setShowTranslatedContent] = useState(false); // New state for translation toggle
+  const [showTranslatedContent, setShowTranslatedContent] = useState(false); 
   
   useEffect(() => {
     const loadData = async () => {
@@ -318,7 +318,17 @@ const App: React.FC = () => {
     if (files.length > 0) {
       const file = files[0];
       try {
-        await fileService.processFile(file, currentFolderId);
+        const { contentHtml, translatedContent } = await fileService.processFileContent(file);
+        
+        await storageService.addNode({
+          name: file.name.replace(/\.[^/.]+$/, ""),
+          type: 'file',
+          parentId: currentFolderId,
+          content: contentHtml,
+          translatedContent: translatedContent,
+          contentType: 'text', // Assuming DOCX are text content
+        });
+
         refreshData();
         setIsUploadingFile(false);
       } catch (err) {
@@ -469,13 +479,22 @@ const App: React.FC = () => {
           {selectedFile ? (
             <TransitionWrapper key={selectedFile.id}>
               <div className="max-w-4xl mx-auto py-16 md:py-24">
-                <button 
-                  onClick={() => setSelectedFile(null)}
-                  className="flex items-center gap-2 text-blue-600 font-bold text-sm mb-12 hover:gap-3 transition-all group"
-                >
-                  <ChevronRight className="w-4 h-4 rotate-180 transition-transform group-hover:-translate-x-1" />
-                  Back
-                </button>
+                <div className="flex items-center justify-between mb-12">
+                  <button 
+                    onClick={() => setSelectedFile(null)}
+                    className="flex items-center gap-2 text-blue-600 font-bold text-sm hover:gap-3 transition-all group"
+                  >
+                    <ChevronRight className="w-4 h-4 rotate-180 transition-transform group-hover:-translate-x-1" />
+                    Back
+                  </button>
+                  <button 
+                    onClick={() => setIsAdminOpen(true)}
+                    className="flex items-center gap-2 text-gray-500 font-medium text-sm hover:text-blue-600 transition-colors"
+                  >
+                    <Edit3 className="w-4 h-4" />
+                    Edit Content
+                  </button>
+                </div>
                 
                 <header className="mb-20">
                   <div className="flex items-center gap-4 mb-8">
@@ -901,7 +920,7 @@ const App: React.FC = () => {
       
       <AnimatePresence>
         {isAdminOpen && (isAuthenticated ? (
-          <AdminPanel onClose={() => { setIsAdminOpen(false); setIsAuthenticated(false); setAdminPassword(''); setAdminError(null); }} currentFolderId={currentFolderId} onRefresh={refreshData} />
+          <AdminPanel onClose={() => { setIsAdminOpen(false); setIsAuthenticated(false); setAdminPassword(''); setAdminError(null); }} currentFolderId={currentFolderId} onRefresh={refreshData} editingNode={selectedFile} />
         ) : (
           <motion.div
             initial={{ opacity: 0 }}
