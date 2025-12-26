@@ -1,4 +1,3 @@
-
 import { Node, NodeType, FolderNode, FileNode } from '../types';
 import { INITIAL_DATA } from '../constants';
 
@@ -13,11 +12,11 @@ export const storageService = {
     }
     return JSON.parse(data);
   },
-
+  
   saveNodes: (nodes: Node[]) => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(nodes));
   },
-
+  
   addNode: (node: Omit<FolderNode, 'id' | 'createdAt'> | Omit<FileNode, 'id' | 'createdAt'>): Node => {
     const nodes = storageService.getNodes();
     const newNode = {
@@ -25,22 +24,24 @@ export const storageService = {
       id: crypto.randomUUID(),
       createdAt: Date.now(),
     } as Node;
+    
     const updated = [...nodes, newNode];
     storageService.saveNodes(updated);
     return newNode;
   },
-
+  
   deleteNode: (id: string) => {
     const nodes = storageService.getNodes();
     const getIdsToDelete = (nodeId: string): string[] => {
       const children = nodes.filter(n => n.parentId === nodeId);
       return [nodeId, ...children.flatMap(c => getIdsToDelete(c.id))];
     };
+    
     const idsToDelete = getIdsToDelete(id);
     const updated = nodes.filter(n => !idsToDelete.includes(n.id));
     storageService.saveNodes(updated);
   },
-
+  
   updateNode: (id: string, updates: Partial<Node>) => {
     const nodes = storageService.getNodes();
     const updated = nodes.map(n => n.id === id ? { ...n, ...updates } : n) as Node[];
