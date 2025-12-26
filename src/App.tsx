@@ -32,7 +32,7 @@ const DualLabel: React.FC<{ name: string; className?: string; subClassName?: str
     <div className={`flex flex-col ${invert ? 'items-end text-right' : 'items-start text-left'}`}>
       <span className={`leading-tight ${className}`}>{english}</span>
       <span 
-        className={`opacity-80 leading-tight mt-0.5 ${subClassName} whitespace-normal font-sans ${invert ? 'text-right' : ''}`} 
+        className={`opacity-80 leading-tight mt-0.5 ${subClassName} whitespace-normal font-sans ${invert ? 'text-right' : ''} break-words`} 
         dir="rtl"
       >
         {hebrew}
@@ -88,7 +88,7 @@ const ContentCard: React.FC<{ node: FileNode; onClick: () => void }> = ({ node, 
           <DualLabel 
             name={node.name} 
             className="text-xl font-serif text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-1" 
-            subClassName="text-xs line-clamp-1" 
+            subClassName="text-xs" 
           />
         </div>
         <p className="text-sm text-gray-400 font-light line-clamp-2 leading-relaxed">
@@ -433,18 +433,7 @@ const App: React.FC = () => {
                   />
                 ))}
               </div>
-              <div className="p-6 border-t border-black/5 bg-gray-50">
-                <button 
-                  onClick={() => {
-                    setIsAdminOpen(true);
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className="w-full bg-black text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2"
-                >
-                  <Settings className="w-5 h-5" />
-                  Admin Portal
-                </button>
-              </div>
+              {/* Removed Admin Portal button from mobile menu */}
             </motion.div>
           </>
         )}
