@@ -1,4 +1,6 @@
+
 export type NodeType = 'folder' | 'file';
+export type FileContentType = 'text' | 'video' | 'link' | 'book';
 
 export interface BaseNode {
   id: string;
@@ -14,15 +16,24 @@ export interface FolderNode extends BaseNode {
 
 export interface FileNode extends BaseNode {
   type: 'file';
-  content: string; // Markdown or plain text
-  translatedContent?: string; // New field for translated content
-  contentType: 'text' | 'video' | 'link';
+  contentEn: string;
+  contentHe?: string;
+  contentType: FileContentType;
   url?: string;
+  isTranslating?: boolean;
 }
 
 export type Node = FolderNode | FileNode;
 
 export interface FileSystemState {
   nodes: Node[];
-  currentPath: string[]; // IDs of parent folders
+  currentPath: string[];
+}
+
+export interface AppSettings {
+  supabaseUrl: string;
+  supabaseKey: string;
+  adminPasscode: string;
+  translationTone: 'scholarly' | 'literal' | 'modern';
+  translationComplexity: 'detailed' | 'concise';
 }

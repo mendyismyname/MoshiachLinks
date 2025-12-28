@@ -1,51 +1,48 @@
+
 import { storageService } from './storageService';
+import { translationService } from './translationService';
 // @ts-ignore
-import * as mammoth from 'mammoth';
+import mammoth from 'https://esm.sh/mammoth';
 
 export const fileService = {
-  processFile: async (file: File, parentId: string | null): Promise<void> => {
+  processFile: async (file: File, parentId: string | null, onProgress?: (status: string) => void): Promise<void> => {
     const fileName = file.name.replace(/\.[^/.]+$/, "");
     let contentHtml = '';
-    let contentType: 'text' | 'video' | 'link' = 'text';
-    
+
     try {
       if (file.name.endsWith('.docx')) {
+        onProgress?.('Extracting Hebrew text from DOCX...');
         const arrayBuffer = await file.arrayBuffer();
-        const result = await mammoth.convertToHtml({ 
-          arrayBuffer,
-          styleMap: [
-            "p[style-name='Heading 1'] => h1:fresh",
-            "p[style-name='Heading 2'] => h2:fresh",
-            "p[style-name='Heading 3'] => h3:fresh",
-            "p[style-name='Center'] => p.text-center:fresh",
-            "p[style-name='Centered'] => p.text-center:fresh",
-            "p[style-name='Normal Center'] => p.text-center:fresh",
-            "p[style-name='Quote'] => blockquote:fresh",
-            "r[style-name='Bold'] => strong",
-            "r[style-name='Strong'] => strong",
-            "r[style-name='Emphasis'] => em",
-            "b => strong",
-            "i => em"
-          ]
-        });
+        const result = await mammoth.convertToHtml({ arrayBuffer });
         contentHtml = result.value;
-      } else if (file.type.startsWith('text/') || file.name.endsWith('.txt') || file.name.endsWith('.md')) {
-        const text = await file.text();
-        contentHtml = text
-          .split(/\n\s*\n/)
-          .map(para => `<p>${para.replace(/\n/g, '<br>')}</p>`)
-          .join('');
       } else {
-        throw new Error("Unsupported format");
+        onProgress?.('Reading text file...');
+        contentHtml = await file.text();
+        // Simple line-break to paragraph conversion for raw text
+        contentHtml = contentHtml.split('\n').map(p => p.trim() ? `<p>${p}</p>` : '').join('');
       }
-      
-      storageService.addNode({
+
+      // Initial save: treat the uploaded content as Hebrew (Source)
+      const newNode = await storageService.addNode({
         name: fileName,
         type: 'file',
         parentId,
-        content: contentHtml,
-        contentType,
+        contentHe: contentHtml,
+        contentEn: '<p><em>Translating to English...</em></p>',
+        contentType: 'text',
       });
+
+      // Async Translation to English
+      onProgress?.('Generating English translation via Gemini...');
+      try {
+        const translated = await translationService.translateToEnglish(contentHtml);
+        await storageService.updateNode(newNode.id, { contentEn: translated });
+      } catch (err) {
+        console.error("Translation to English failed:", err);
+        await storageService.updateNode(newNode.id, { 
+          contentEn: '<p><span style="color: red;">Translation error. Please trigger manually in settings.</span></p>' 
+        });
+      }
     } catch (err) {
       console.error("File processing error:", err);
       throw err;
